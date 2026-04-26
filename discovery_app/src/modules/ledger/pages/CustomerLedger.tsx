@@ -45,6 +45,28 @@ export default function CustomerLedger() {
   const party = useSelector(selectPartyById(partyID));
   const categories = useSelector(selectAllCategory);
 
+  const getStockEntryColorClass = (
+    ledger: { transactionType?: string | null },
+    entryType: "debit" | "credit"
+  ) => {
+    const transactionType = String(ledger.transactionType || "").toLowerCase();
+    const isPurchaseFixType = ["fix_purchase", "unfix_purchase"].includes(transactionType);
+
+    if (isPurchaseFixType) {
+      return entryType === "debit" ? "text-green-700" : "text-red-500";
+    }
+
+    return entryType === "debit" ? "text-red-500" : "text-green-700";
+  };
+
+  const getPartyLedgerStockBalanceDelta = (ledger: {
+    transactionType?: string | null;
+    debitQty?: number | null;
+    creditQty?: number | null;
+  }) => {
+    return (Number(ledger.creditQty) || 0) - (Number(ledger.debitQty) || 0);
+  };
+
   // Compute cumulative balance for all ledgers
   const ledgersWithBalance = useMemo(() => {
     if (!ledgers || ledgers.length === 0) return [];
@@ -70,7 +92,7 @@ export default function CustomerLedger() {
       cumulativeMap[currency] = (cumulativeMap[currency] || 0) + moneyChange;
 
       // Stock balance
-      const stockChange = Number(ledger.creditQty ?? 0) - Number(ledger.debitQty ?? 0);
+      const stockChange = getPartyLedgerStockBalanceDelta(ledger);
       cumulativeMap[stockCurrency] = (cumulativeMap[stockCurrency] || 0) + stockChange;
 
       const cumulativeBalanceArray = Object.entries(cumulativeMap).map(([cur, amount]) => ({
@@ -302,10 +324,10 @@ export default function CustomerLedger() {
                           {categories.find((c) => ["currency", "gold"].includes(c.name.toLowerCase())) && (
                             <>
                             <TableCell className="border border-gray-500 bg-gray-50 text-center px-1 py-1">
-                              <div className="text-red-500">{ledger.debitQty > 0 ? `${ledger.stockCurrency} : ${ledger.debitQty}` : ``}</div>
+                              <div className={getStockEntryColorClass(ledger, "debit")}>{ledger.debitQty > 0 ? `${ledger.stockCurrency} : ${ledger.debitQty}` : ``}</div>
                             </TableCell>
                             <TableCell className="border border-gray-500 bg-gray-50 text-center px-1 py-1">
-                              <div className="text-green-700">{ledger.creditQty > 0 ? `${ledger.stockCurrency} : ${ledger.creditQty}` : ``}</div>
+                              <div className={getStockEntryColorClass(ledger, "credit")}>{ledger.creditQty > 0 ? `${ledger.stockCurrency} : ${ledger.creditQty}` : ``}</div>
                             </TableCell>
                             </>
                           )}

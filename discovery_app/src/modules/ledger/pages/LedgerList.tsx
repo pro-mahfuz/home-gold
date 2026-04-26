@@ -156,6 +156,34 @@ export default function LedgerList() {
     return ledger.currency || ledger.stockCurrency || "UNKNOWN";
   };
 
+  const getAllLedgerStockBalanceDelta = (ledger: {
+    transactionType?: string | null;
+    debitQty?: number | null;
+    creditQty?: number | null;
+  }) => {
+    const transactionType = String(ledger.transactionType || "").toLowerCase();
+    const debitQty = Number(ledger.debitQty) || 0;
+    const creditQty = Number(ledger.creditQty) || 0;
+
+    if (transactionType === "fix_purchase") {
+      return 0 - creditQty;
+    }
+
+    if (transactionType === "unfix_purchase") {
+      return debitQty;
+    }
+
+    if (transactionType === "unfix_sale") {
+      return 0 - debitQty;
+    }
+
+    if (transactionType === "fix_sale") {
+      return creditQty;
+    }
+
+    return debitQty - creditQty;
+  };
+
   const formatBalanceValue = (value: number | null | undefined) =>
     value === null || value === undefined ? "-" : Number(value).toFixed(2);
 
@@ -199,7 +227,10 @@ export default function LedgerList() {
 
       if (hasStockEntry) {
         const stockKey = getStockBalanceKey(ledger);
-        stockBalancesByItem[stockKey] = (stockBalancesByItem[stockKey] || 0) + (creditQty - debitQty);
+        const stockBalanceDelta = isAllLedger
+          ? getAllLedgerStockBalanceDelta(ledger)
+          : debitQty - creditQty;
+        stockBalancesByItem[stockKey] = (stockBalancesByItem[stockKey] || 0) + stockBalanceDelta;
         cumulativeStockBalance = stockBalancesByItem[stockKey];
       }
 
@@ -321,9 +352,9 @@ export default function LedgerList() {
       }
 
       current.purchaseBalance = current.purchaseCredit - current.purchaseDebit;
-      current.purchaseStockBalance = current.purchaseStockCredit - current.purchaseStockDebit;
+      current.purchaseStockBalance = current.purchaseStockDebit - current.purchaseStockCredit;
       current.saleBalance = current.saleCredit - current.saleDebit;
-      current.saleStockBalance = current.saleStockCredit - current.saleStockDebit;
+      current.saleStockBalance = current.saleStockDebit - current.saleStockCredit;
       current.advanceBalance = current.advanceCredit - current.advanceDebit;
       current.closeBalance = current.purchaseBalance + current.saleBalance;
 
@@ -358,10 +389,11 @@ export default function LedgerList() {
   const allLedgerStockSummary = useMemo(() => {
     if (!isAllLedger) return [] as Array<[string, AllLedgerAmountTotals]>;
 
-    const totals = ledgersWithBalance.reduce<Record<string, AllLedgerAmountTotals>>((acc, ledger) => {
+    const totals = filteredLedgers.reduce<Record<string, AllLedgerAmountTotals>>((acc, ledger) => {
       const itemLabel = getStockBalanceKey(ledger);
       const debit = Number(ledger.debitQty) || 0;
       const credit = Number(ledger.creditQty) || 0;
+      const balanceDelta = getAllLedgerStockBalanceDelta(ledger);
 
       if (debit === 0 && credit === 0) return acc;
 
@@ -371,13 +403,19 @@ export default function LedgerList() {
 
       acc[itemLabel].debit += debit;
       acc[itemLabel].credit += credit;
-      acc[itemLabel].balance = acc[itemLabel].credit - acc[itemLabel].debit;
+      acc[itemLabel].balance += balanceDelta;
 
       return acc;
     }, {});
 
+    Object.values(totals).forEach((entry) => {
+      if (Math.abs(entry.debit - entry.credit) < 0.01) {
+        entry.balance = 0;
+      }
+    });
+
     return Object.entries(totals).sort(([itemA], [itemB]) => itemA.localeCompare(itemB));
-  }, [isAllLedger, ledgersWithBalance]);
+  }, [filteredLedgers, isAllLedger]);
 
   const ledgerTableColumnCount = isAllLedger
     ? 13

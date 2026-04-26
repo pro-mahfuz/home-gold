@@ -1,6 +1,40 @@
 import { Payment, User, Party, Category, Container, Invoice, Bank, Ledger, sequelize } from "../../models/model.js";
 import { Op, Sequelize } from "sequelize";
 
+const PAYMENT_CREDIT_TYPES = new Set([
+  "payment_in",
+  "advance_received",
+  "payable",
+  "advance_payment_deduct",
+  "capital_in",
+  "discount_sale",
+  "deposit",
+  "premium_received",
+  "premium_paid",
+]);
+
+const PAYMENT_DEBIT_TYPES = new Set([
+  "payment_out",
+  "advance_payment",
+  "receivable",
+  "advance_received_deduct",
+  "capital_out",
+  "discount_purchase",
+  "withdraw",
+  "premium_received",
+  "premium_paid",
+  "bill_out",
+]);
+
+const getPaymentEntryAmounts = (paymentType, amountPaid) => {
+  const normalizedAmount = Number(amountPaid) || 0;
+
+  return {
+    debit: PAYMENT_DEBIT_TYPES.has(paymentType) ? normalizedAmount : 0,
+    credit: PAYMENT_CREDIT_TYPES.has(paymentType) ? normalizedAmount : 0,
+  };
+};
+
 // Get All Payments
 export const getAllPayment = async () => {
   const data = await Payment.findAll({
@@ -43,11 +77,14 @@ export const getAllPayment = async () => {
     const paymentRefNo = payment.prefix + "-" + String(payment.id).padStart(6, '0');
     const invoiceRefNo = payment.invoice ? payment.invoice.prefix + "-" + String(payment.invoice.id).padStart(6, '0') : '';
     const vatInvoiceRefNo = payment.invoice?.vatInvoiceNo ? payment.invoice.prefix + "-" + String(payment.invoice?.vatInvoiceNo).padStart(6, '0') : '';
+    const { debit, credit } = getPaymentEntryAmounts(payment.paymentType, payment.amountPaid);
     return {
       ...payment.toJSON(),
       paymentRefNo,
       invoiceRefNo,
       vatInvoiceRefNo,
+      debit,
+      credit,
       createdByUser: payment.createdByUser?.name ?? null,
       updatedByUser: payment.updatedByUser?.name ?? null,
     };
@@ -142,12 +179,15 @@ export const getAllPaymentWithPagination = async (
     const vatInvoiceRefNo = payment.invoice?.vatInvoiceNo
       ? `${payment.invoice.prefix}-${String(payment.invoice.vatInvoiceNo).padStart(6, "0")}`
       : "";
+    const { debit, credit } = getPaymentEntryAmounts(payment.paymentType, payment.amountPaid);
 
     return {
       ...payment.toJSON(),
       paymentRefNo,
       invoiceRefNo,
       vatInvoiceRefNo,
+      debit,
+      credit,
       createdByUser: payment.createdByUser?.name ?? null,
       updatedByUser: payment.updatedByUser?.name ?? null,
     };
@@ -225,41 +265,10 @@ export const createPayment = async (req) => {
       ].includes(req.body.paymentType)
     ) {
       // Only create Ledger for payment types (not pure expenses)
-      let debitAmount = 0;
-      let creditAmount = 0;
-
-      if (
-        [
-          "payment_in",
-          "advance_received",
-          "payable",
-          "advance_payment_deduct",
-          "capital_in",
-          "discount_sale",
-          "deposit",
-          "premium_received",
-          "premium_paid"
-        ].includes(req.body.paymentType)
-      ) {
-        creditAmount = req.body.amountPaid;
-      } 
-      
-      if (
-        [
-          "payment_out",
-          "advance_payment",
-          "receivable",
-          "advance_received_deduct",
-          "capital_out",
-          "discount_purchase",
-          "withdraw",
-          "premium_received",
-          "premium_paid",
-          "bill_out"
-        ].includes(req.body.paymentType)
-      ) {
-        debitAmount = req.body.amountPaid;
-      }
+      const { debit: debitAmount, credit: creditAmount } = getPaymentEntryAmounts(
+        req.body.paymentType,
+        req.body.amountPaid
+      );
 
       // Invoice Ref
       if (req.body.invoiceId){
@@ -390,40 +399,10 @@ export const updatePayment = async (req) => {
         "bill_out"
       ].includes(req.body.paymentType)
     ) {
-      // Debit/Credit calculation
-      let debitAmount = 0;
-      let creditAmount = 0;
-
-      if (
-        [
-          "payment_in",
-          "payable",
-          "advance_received",
-          "advance_payment_deduct",
-          "capital_in",
-          "discount_sale",
-          "deposit",
-          "premium_received",
-          "premium_paid"
-        ].includes(req.body.paymentType)
-      ) {
-        creditAmount = req.body.amountPaid;
-      } if (
-        [
-          "payment_out",
-          "receivable",
-          "advance_payment",
-          "advance_received_deduct",
-          "capital_out",
-          "discount_purchase",
-          "withdraw",
-          "premium_received",
-          "premium_paid",
-          "bill_out"
-        ].includes(req.body.paymentType)
-      ) {
-        debitAmount = req.body.amountPaid;
-      }
+      const { debit: debitAmount, credit: creditAmount } = getPaymentEntryAmounts(
+        req.body.paymentType,
+        req.body.amountPaid
+      );
 
       // Ledger entry
       let ledger = await Ledger.findOne({

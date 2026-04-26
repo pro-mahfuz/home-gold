@@ -40,6 +40,8 @@ export interface Stock {
 }
 
 export interface StockReport {
+  partyId?: number | null;
+  party?: Party;
   warehouseId?: number | null;
   warehouse?: Warehouse;
   containerId: number;
@@ -49,6 +51,10 @@ export interface StockReport {
   unit?: string;
   itemName?: string;
   item: Item;
+  totalUnfixPurchase?: number;
+  totalFixPurchase?: number;
+  totalUnfixSale?: number;
+  totalFixSale?: number;
   totalStockIn?: number;
   totalStockOut?: number;
   totalTransferOut?: number;

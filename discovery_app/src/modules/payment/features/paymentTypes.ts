@@ -68,6 +68,8 @@ export interface Payment {
   paymentMethod?: string;
   paymentDetails?: string;
   currency: string;
+  debit?: number;
+  credit?: number;
   category?: Category;
   invoice?: Invoice;
   party?: Party;

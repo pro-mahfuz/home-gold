@@ -1,8 +1,8 @@
 import { Invoice, InvoiceItem, User, Payment, Item, Container, Warehouse, Stock, Ledger, Category, Party, sequelize } from "../../models/model.js";
 import { fn, col, Op, Sequelize } from "sequelize";
 
-const AUTO_PURCHASE_STOCK_TYPES = ["wholesale_purchase"];
-const AUTO_SALE_STOCK_TYPES = ["wholesale_sale", "unfix_sale"];
+const AUTO_PURCHASE_STOCK_TYPES = ["wholesale_purchase", "unfix_purchase", "fix_purchase"];
+const AUTO_SALE_STOCK_TYPES = ["wholesale_sale", "unfix_sale", "fix_sale"];
 const AUTO_STOCK_MANAGED_TYPES = ["sale", ...AUTO_PURCHASE_STOCK_TYPES, ...AUTO_SALE_STOCK_TYPES, "fix_sale", "fix_purchase", "unfix_purchase"];
 const STOCK_PREFIX_MAP = {
   stock_in: "STI",
@@ -26,7 +26,7 @@ const INVOICE_PAYMENT_CONFIG = {
     paymentType: "payment_out",
     prefix: "PMO",
     description: "Paid Payment",
-    debit: false,
+    debit: true,
   },
   fix_sale: {
     paymentType: "payment_in",
@@ -254,6 +254,22 @@ const syncInvoiceAutoPayment = async ({
 }) => {
   const type = invoice.invoiceType?.toLowerCase();
   const paymentConfig = INVOICE_PAYMENT_CONFIG[type];
+  const shouldPersistPaymentRecord = type !== "fix_purchase";
+
+  if (type === "fix_purchase") {
+    const existingPaymentOutLedgers = await Ledger.findAll({
+      where: {
+        invoiceId: invoice.id,
+        transactionType: paymentConfig?.paymentType || "payment_out",
+      },
+      transaction,
+    });
+
+    for (const ledger of existingPaymentOutLedgers) {
+      await ledger.destroy({ transaction });
+    }
+  }
+
   if (!paymentConfig) {
     if (type === "unfix_sale") {
       const existingPayments = await Payment.findAll({
@@ -293,12 +309,26 @@ const syncInvoiceAutoPayment = async ({
     (Number(invoice.grandTotal) || 0) - (Number(invoice.discount) || 0)
   );
   const normalizedPaidTotal =
-    Number(paidTotal) > 0
+    type === "fix_purchase"
+      ? invoiceFinalAmount
+      : Number(paidTotal) > 0
       ? Number(paidTotal)
       : isFullPaid
         ? invoiceFinalAmount
         : 0;
   const normalizedBankId = Number(bankId) > 0 ? Number(bankId) : null;
+
+  if (type === "fix_purchase") {
+    if (existingPayment) {
+      await Ledger.destroy({
+        where: { paymentId: existingPayment.id },
+        transaction,
+      });
+      await existingPayment.destroy({ transaction });
+    }
+
+    return null;
+  }
 
   if (invoice.system !== 1 || normalizedPaidTotal <= 0) {
     if (existingPayment) {
@@ -309,6 +339,14 @@ const syncInvoiceAutoPayment = async ({
       await existingPayment.destroy({ transaction });
     }
     return null;
+  }
+
+  if (!shouldPersistPaymentRecord && existingPayment) {
+    await Ledger.destroy({
+      where: { paymentId: existingPayment.id },
+      transaction,
+    });
+    await existingPayment.destroy({ transaction });
   }
 
   const paymentPayload = {
@@ -326,9 +364,11 @@ const syncInvoiceAutoPayment = async ({
     updatedBy,
   };
 
-  const payment = existingPayment
-    ? await existingPayment.update(paymentPayload, { transaction })
-    : await Payment.create(paymentPayload, { transaction });
+  const payment = shouldPersistPaymentRecord
+    ? existingPayment
+      ? await existingPayment.update(paymentPayload, { transaction })
+      : await Payment.create(paymentPayload, { transaction })
+    : null;
 
   const ledgerPayload = {
     businessId: invoice.businessId,
@@ -336,7 +376,7 @@ const syncInvoiceAutoPayment = async ({
     transactionType: paymentConfig.paymentType,
     partyId: invoice.partyId,
     date: invoice.date,
-    paymentId: payment.id,
+    paymentId: payment?.id ?? null,
     invoiceId: invoice.id,
     bankId: normalizedBankId,
     description: paymentConfig.description,
@@ -347,10 +387,19 @@ const syncInvoiceAutoPayment = async ({
     updatedBy,
   };
 
-  const existingLedger = await Ledger.findOne({
-    where: { paymentId: payment.id },
-    transaction,
-  });
+  const existingLedger = payment
+    ? await Ledger.findOne({
+        where: { paymentId: payment.id },
+        transaction,
+      })
+    : await Ledger.findOne({
+        where: {
+          invoiceId: invoice.id,
+          transactionType: paymentConfig.paymentType,
+          paymentId: null,
+        },
+        transaction,
+      });
 
   if (existingLedger) {
     await existingLedger.update(ledgerPayload, { transaction });
@@ -1466,17 +1515,21 @@ export const createInvoice = async (req) => {
       creditAmount = invoice.grandTotal;
     }
 
-    if (["sale", "wholesale_sale", "fix_sale"].includes(type)) {
+    if (["sale", "wholesale_sale", "fix_sale", "fix_purchase"].includes(type)) {
       debitAmount = invoice.grandTotal;
     }
 
     if (category && ["currency", "gold"].includes(category.name.toLowerCase())) {
-      if (["purchase", "clearance_bill", "unfix_purchase", "wholesale_purchase"].includes(type)) {
+      if (["purchase", "clearance_bill", "wholesale_purchase"].includes(type)) {
         creditQuantity = items[0]?.quantity ?? 0;
         stock_Currency = items[0]?.name ?? null;
       }
-      if (type === "fix_purchase") {
+      if (type === "unfix_purchase") {
         debitQuantity = items[0]?.quantity ?? 0;
+        stock_Currency = items[0]?.name ?? null;
+      }
+      if (type === "fix_purchase") {
+        creditQuantity = items[0]?.quantity ?? 0;
         stock_Currency = items[0]?.name ?? null;
       }
       if (type === "unfix_sale") {
@@ -1523,7 +1576,7 @@ export const createInvoice = async (req) => {
         items,
         movementType: "stock_in",
         transaction: t,
-        createLedgerEntry: shouldCreateAutoStockLedger(type, category?.name),
+        createLedgerEntry: type === "fix_purchase" ? false : shouldCreateAutoStockLedger(type, category?.name),
       });
     }
 
@@ -1540,7 +1593,7 @@ export const createInvoice = async (req) => {
         items,
         movementType: "stock_out",
         transaction: t,
-        createLedgerEntry: type === "unfix_sale" ? false : shouldCreateAutoStockLedger(type, category?.name),
+        createLedgerEntry: ["unfix_sale", "fix_sale"].includes(type) ? false : shouldCreateAutoStockLedger(type, category?.name),
       });
     }
 
@@ -1767,17 +1820,21 @@ export const updateInvoice = async (req) => {
           creditAmount = invoice.grandTotal;
         }
 
-        if (["sale", "wholesale_sale", "fix_sale"].includes(type)) {
+        if (["sale", "wholesale_sale", "fix_sale", "fix_purchase"].includes(type)) {
           debitAmount = invoice.grandTotal;
         }
 
         if (category && ["currency", "gold"].includes(category.name.toLowerCase())) {
-          if (["purchase", "clearance_bill", "unfix_purchase", "wholesale_purchase"].includes(type)) {
+          if (["purchase", "clearance_bill", "wholesale_purchase"].includes(type)) {
             creditQuantity = items[0]?.quantity ?? 0;
             stock_Currency = items[0]?.name ?? null;
           }
-          if (type === "fix_purchase") {
+          if (type === "unfix_purchase") {
             debitQuantity = items[0]?.quantity ?? 0;
+            stock_Currency = items[0]?.name ?? null;
+          }
+          if (type === "fix_purchase") {
+            creditQuantity = items[0]?.quantity ?? 0;
             stock_Currency = items[0]?.name ?? null;
           }
           if (type === "unfix_sale") {
@@ -1823,7 +1880,7 @@ export const updateInvoice = async (req) => {
             movementType: "stock_in",
             transaction: t,
             updatedBy: updatedInvoice.updatedBy,
-            createLedgerEntry: shouldCreateAutoStockLedger(nextInvoiceType, category?.name),
+            createLedgerEntry: nextInvoiceType === "fix_purchase" ? false : shouldCreateAutoStockLedger(nextInvoiceType, category?.name),
           });
         }
 
@@ -1841,7 +1898,7 @@ export const updateInvoice = async (req) => {
             movementType: "stock_out",
             transaction: t,
             updatedBy: updatedInvoice.updatedBy,
-            createLedgerEntry: nextInvoiceType === "unfix_sale" ? false : shouldCreateAutoStockLedger(nextInvoiceType, category?.name),
+            createLedgerEntry: ["unfix_sale", "fix_sale"].includes(nextInvoiceType) ? false : shouldCreateAutoStockLedger(nextInvoiceType, category?.name),
           });
         }
 

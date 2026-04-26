@@ -1,5 +1,5 @@
-import { Stock, Business, User, Invoice, Item, Bank, Category, Container, Ledger, Warehouse, Party, sequelize } from "../../models/model.js";
-import { fn, literal } from "sequelize";
+import { Stock, Business, User, Invoice, InvoiceItem, Item, Bank, Category, Container, Ledger, Warehouse, Party, sequelize } from "../../models/model.js";
+import { fn, literal, Op } from "sequelize";
 
 const STOCK_PREFIX_MAP = {
   stock_in: "STI",
@@ -162,106 +162,126 @@ export const getAllStock = async () => {
 }
 
 export const getStockReport = async () => {
-  const data = await Stock.findAll({
-    attributes: [
-      "warehouseId",
-      "containerId",
-      "itemId",
-      "unit",
-
-      [
-        fn(
-          "SUM",
-          literal(`CASE WHEN movementType = 'stock_in' THEN quantity ELSE 0 END`)
-        ),
-        "totalStockIn",
-      ],
-
-      [
-        fn(
-          "SUM",
-          literal(`CASE WHEN movementType = 'stock_out' THEN quantity ELSE 0 END`)
-        ),
-        "totalStockOut",
-      ],
-
-      [
-        fn(
-          "SUM",
-          literal(`CASE WHEN movementType = 'stock_transfer' THEN quantity ELSE 0 END`)
-        ),
-        "totalTransferOut",
-      ],
-
-      [
-        fn(
-          "SUM",
-          literal(`CASE WHEN movementType = 'stock_transfer_return' THEN quantity ELSE 0 END`)
-        ),
-        "totalTransferReturn",
-      ],
-
-      [
-        fn(
-          "SUM",
-          literal(`CASE WHEN movementType IN ('stock_in', 'stock_transfer_return') THEN quantity ELSE 0 END`)
-        ),
-        "totalIn",
-      ],
-
-      // Sum quantity where movementType = 'out'
-      [
-        fn(
-          "SUM",
-          literal(`CASE WHEN movementType IN ('stock_out', 'stock_transfer') THEN quantity ELSE 0 END`)
-        ),
-        "totalOut",
-      ],
-
-      // Sum quantity where movementType = 'damaged'
-      [
-        fn(
-          "SUM",
-          literal(`CASE WHEN movementType = 'damaged' THEN quantity ELSE 0 END`)
-        ),
-        "totalDamaged",
-      ],
-    ],
+  const ledgerRows = await Ledger.findAll({
+    where: {
+      isDeleted: false,
+      invoiceId: { [Op.ne]: null },
+      transactionType: {
+        [Op.in]: ["unfix_purchase", "fix_purchase", "unfix_sale", "fix_sale"],
+      },
+    },
     include: [
       {
-        model: Item,
-        as: "item",
+        model: Party,
+        as: "party",
+        required: false,
       },
-      { model: Container, as: "container" },
-      { model: Warehouse, as: "warehouse" },
+      {
+        model: Invoice,
+        as: "invoice",
+        required: true,
+        include: [
+          {
+            model: InvoiceItem,
+            as: "items",
+            required: false,
+            include: [
+              { model: Item, as: "item", required: false },
+              { model: Container, as: "container", required: false },
+              { model: Warehouse, as: "warehouse", required: false },
+            ],
+          },
+        ],
+      },
     ],
-    group: ["warehouseId", "containerId", "itemId", "unit"],
+    order: [
+      ["date", "ASC"],
+      ["id", "ASC"],
+    ],
   });
 
-  if (!data || data.length === 0) {
+  if (!ledgerRows || ledgerRows.length === 0) {
     throw { status: 400, message: "No stock found" };
   }
 
-  return data.map((d) => {
-    const json = d.toJSON();
-    const totalStockIn = Number(json.totalStockIn) || 0;
-    const totalStockOut = Number(json.totalStockOut) || 0;
-    const totalTransferOut = Number(json.totalTransferOut) || 0;
-    const totalTransferReturn = Number(json.totalTransferReturn) || 0;
-    const totalDamaged = Number(json.totalDamaged) || 0;
-    const totalIn = Number(json.totalIn) || 0;
-    const totalOut = Number(json.totalOut) || 0;
-    const currentStock =
-      totalStockIn -
-      totalStockOut -
-      totalTransferOut +
-      totalTransferReturn -
-      totalDamaged;
+  const grouped = new Map();
+
+  ledgerRows.forEach((ledger) => {
+    const transactionType = ledger.transactionType?.toLowerCase();
+    const invoiceItems = ledger.invoice?.items ?? [];
+
+    invoiceItems.forEach((invoiceItem) => {
+      const partyId = Number(ledger.partyId) || 0;
+      const warehouseId = Number(invoiceItem.warehouseId) || 0;
+      const containerId = Number(invoiceItem.containerId) || 0;
+      const itemId = Number(invoiceItem.itemId) || 0;
+      const unit = invoiceItem.unit ?? "";
+      const key = [partyId, warehouseId, containerId, itemId, unit].join("|");
+
+      const existing = grouped.get(key) ?? {
+        partyId: partyId || null,
+        party: ledger.party ?? null,
+        warehouseId: warehouseId || null,
+        containerId: containerId || null,
+        itemId: itemId || null,
+        unit,
+        warehouse: invoiceItem.warehouse ?? null,
+        container: invoiceItem.container ?? null,
+        item: invoiceItem.item ?? null,
+        totalUnfixPurchase: 0,
+        totalFixPurchase: 0,
+        totalUnfixSale: 0,
+        totalFixSale: 0,
+        totalStockIn: 0,
+        totalStockOut: 0,
+        totalTransferOut: 0,
+        totalTransferReturn: 0,
+        totalIn: 0,
+        totalOut: 0,
+        totalDamaged: 0,
+      };
+
+      const quantity = Number(invoiceItem.quantity) || 0;
+
+      if (transactionType === "unfix_purchase") {
+        existing.totalUnfixPurchase += quantity;
+      }
+      if (transactionType === "fix_purchase") {
+        existing.totalFixPurchase += quantity;
+      }
+      if (transactionType === "unfix_sale") {
+        existing.totalUnfixSale += quantity;
+      }
+      if (transactionType === "fix_sale") {
+        existing.totalFixSale += quantity;
+      }
+
+      grouped.set(key, existing);
+    });
+  });
+
+  return Array.from(grouped.values()).map((entry) => {
+    const totalUnfixPurchase = Number(entry.totalUnfixPurchase) || 0;
+    const totalFixPurchase = Number(entry.totalFixPurchase) || 0;
+    const totalUnfixSale = Number(entry.totalUnfixSale) || 0;
+    const totalFixSale = Number(entry.totalFixSale) || 0;
+    const totalStockIn = Number(entry.totalStockIn) || 0;
+    const totalStockOut = Number(entry.totalStockOut) || 0;
+    const totalTransferOut = Number(entry.totalTransferOut) || 0;
+    const totalTransferReturn = Number(entry.totalTransferReturn) || 0;
+    const totalDamaged = Number(entry.totalDamaged) || 0;
+    const totalIn = Number(entry.totalIn) || 0;
+    const totalOut = Number(entry.totalOut) || 0;
+    const currentStock = totalUnfixPurchase - totalFixSale;
     const transferStock = totalTransferOut - totalTransferReturn;
     const totalStock = currentStock + transferStock;
 
     return {
-      ...json,
+      ...entry,
+      totalUnfixPurchase,
+      totalFixPurchase,
+      totalUnfixSale,
+      totalFixSale,
       totalStockIn,
       totalStockOut,
       totalTransferOut,
