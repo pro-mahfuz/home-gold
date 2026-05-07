@@ -31,8 +31,6 @@ import { selectAllParties } from "../../party/features/partySelectors";
 import { selectAllCategory, selectCategoryById } from "../../category/features/categorySelectors";
 import { selectUserById } from "../../user/features/userSelectors";
 import { selectAuth } from "../../auth/features/authSelectors";
-import { selectAllContainer } from "../../container/features/containerSelectors";
-import { fetchAll } from "../../container/features/containerThunks.ts";
 import { selectAllInvoice } from "../../invoice/features/invoiceSelectors.ts";
 import { fetchAllInvoicePagination } from "../features/invoiceThunks.ts";
 import { selectAllStatusByType } from "../../status/features/statusSelectors.ts";
@@ -61,7 +59,6 @@ export default function InvoiceCreateForm() {
         }
         dispatch(fetchAllCategory());
         dispatch(fetchAllItem());
-        dispatch(fetchAll());
         if(invoices.length === 0){
             dispatch(fetchAllInvoicePagination({ page: 1, limit: 10, type: invoiceType }));
         }
@@ -78,7 +75,6 @@ export default function InvoiceCreateForm() {
     const UnitOptions = useSelector(selectAllUnitByBusiness(Number(user?.business?.id)));
     const warehouses = useSelector(selectAllWarehouse);
     const paymentAccounts = useSelector(selectAllAccount);
-    const containers = useSelector(selectAllContainer);
     const itemData = useSelector(selectAllItemByBusiness(user?.business?.id || 0));
     
     const [formData, setFormData] = useState<Invoice>({
@@ -129,8 +125,6 @@ export default function InvoiceCreateForm() {
     // Local state for current item inputs
     const [currentItem, setCurrentItem] = useState<Item>({
         itemId: 0,
-        containerId: null,
-        containerNo: null,
         uniqueId: Date.now(), // Generate unique ID for new item
         name: '',
         price: 0,
@@ -226,7 +220,6 @@ export default function InvoiceCreateForm() {
 
         setCurrentItem({
             itemId: 0,
-            containerId: null,
             uniqueId: Date.now(),
             name: '',
             price: 0,
@@ -521,37 +514,6 @@ export default function InvoiceCreateForm() {
                             />
                         </div>
 
-                        {!categories.find((c) => ["currency", "gold"].includes(c.name.toLowerCase()) ) && (
-                            <div>
-                                <Label>Container</Label>
-                                <Select
-                                    options={
-                                    containers
-                                        ?.map((i) => ({
-                                            label: `${i.containerNo}`,
-                                            value: i.id,
-                                        })) || []
-                                    }
-                                    placeholder="Select container"
-                                    value={
-                                        containers
-                                        .map((w) => ({ label: w.containerNo, value: w.id }))
-                                        .find((option) => option.value === currentItem.containerId) || null
-                                    }
-                                    onChange={(selectedOption) =>
-                                        setCurrentItem((prev) => ({
-                                            ...prev,
-                                            containerId: selectedOption?.value ?? null,
-                                            containerNo: selectedOption?.label ?? null, 
-                                        }))
-                                    }
-                                    isClearable
-                                    styles={selectStyles}
-                                    classNamePrefix="react-select"
-                                />
-                            </div>
-                        )}
-
                         <div>
                             <Label>Quantity</Label>
                             <Input
@@ -649,9 +611,6 @@ export default function InvoiceCreateForm() {
                     <TableRow>
                         <TableCell isHeader className="text-center px-4 py-2">Sl</TableCell>
                         <TableCell isHeader className="text-center px-4 py-2">Item</TableCell>
-                        { !categories.find((c) => ["currency", "gold"].includes(c.name.toLowerCase()) ) && formData.invoiceType === "sale" && (
-                            <TableCell isHeader className="text-center px-4 py-2">Container</TableCell>
-                        )}
                         <TableCell isHeader className="text-center px-4 py-2">Quantity</TableCell>
                         <TableCell isHeader className="text-center px-4 py-2">Unit</TableCell>
                         <TableCell isHeader className="text-center px-4 py-2">Price</TableCell>
@@ -675,9 +634,6 @@ export default function InvoiceCreateForm() {
                         <TableRow key={index+1}>
                             <TableCell className="text-center px-4 py-2">{index + 1}</TableCell>
                             <TableCell className="text-center px-4 py-2">{item.name}</TableCell>
-                            { !categories.find((c) => ["currency", "gold"].includes(c.name.toLowerCase()) ) && formData.invoiceType === "sale" && (
-                                <TableCell className="text-center px-4 py-2">{item?.containerNo ?? item?.container?.containerNo}</TableCell>
-                            )}
                             <TableCell className="text-center px-4 py-2">{item.quantity}</TableCell>
                             <TableCell className="text-center px-4 py-2">{item.unit}</TableCell>
                             <TableCell className="text-center px-4 py-2">{item?.price?.toFixed(2)}</TableCell>

@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { InvoiceState } from './invoiceTypes';
-import { create, fetchAllInvoice, fetchAllInvoicePagination, getPurchaseReport, getSaleReport, getSaleContainerReport, getSaleCashReport, getBillReport, getSalePaymentReport, getProfitLossReport, getDailyProfitLossReport, fetchById, update, destroy } from './invoiceThunks';
+import { create, fetchAllInvoice, fetchAllInvoicePagination, getPurchaseReport, getSaleReport, getSaleCashReport, getBillReport, getSalePaymentReport, getProfitLossReport, getDailyProfitLossReport, fetchById, update, destroy } from './invoiceThunks';
 
 
 
@@ -10,7 +10,6 @@ const initialState: InvoiceState = {
   invoiceData: null,
   saleReport: [],
   purchaseReport: [],
-  saleContainerReport: [],
   saleCashReport: [],
   billReport: [],
   salePaymentReport: [],
@@ -78,16 +77,6 @@ const Slice = createSlice({
         state.saleReport = action.payload;
       })
       .addCase(getSaleReport.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.error.message || null;
-      })
-
-      // getSaleContainerReport
-      .addCase(getSaleContainerReport.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        state.saleContainerReport = action.payload;
-      })
-      .addCase(getSaleContainerReport.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.error.message || null;
       })

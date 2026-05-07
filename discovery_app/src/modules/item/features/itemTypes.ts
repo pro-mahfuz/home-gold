@@ -1,5 +1,4 @@
 import { Invoice } from "../../invoice/features/invoiceTypes";
-import { Container } from "../../container/features/containerTypes";
 import { Category } from "../../category/features/categoryTypes";
 import { Warehouse } from "../../warehouse/features/warehouseTypes";
 
@@ -8,8 +7,6 @@ export interface Item {
   id?: number;
   businessId?: number;
   uniqueId?: number;
-  containerId?: number | null;
-  containerNo?: string | null,
   itemId?: number;
   code?: string;
   categoryId?: number;
@@ -24,7 +21,6 @@ export interface Item {
   warehouse?: Warehouse;
   itemGrandTotal?: number;
   invoice?: Invoice;
-  container?: Container;
   stockIn?: number;
   stockOut?: number;
   isActive?: boolean;

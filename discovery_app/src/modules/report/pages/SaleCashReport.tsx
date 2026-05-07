@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -25,7 +25,6 @@ import { fetchAllCategory } from "../../category/features/categoryThunks.ts";
 import { fetchParty } from "../../party/features/partyThunks.ts";
 
 export default function SaleCashReport() {
-  const { containerNo } = useParams()
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
@@ -36,7 +35,7 @@ export default function SaleCashReport() {
     dispatch(fetchParty({ type: "all" }))
     dispatch(getSaleCashReport());
     dispatch(fetchAllCategory());
-  }, [dispatch, containerNo]);
+  }, [dispatch]);
 
   const authUser = useSelector(selectAuth);
   const user = useSelector(selectUserById(Number(authUser?.user?.id)));

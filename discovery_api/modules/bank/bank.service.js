@@ -37,7 +37,6 @@ export const getBalanceStatement = async () => {
     let advanceOutSum = 0;
     let capitalInSum = 0;
     let capitalOutSum = 0;
-    let containerExpenseOutSum = 0;
     let billOutSum = 0;
 
     bank.payments?.forEach(payment => {
@@ -83,9 +82,6 @@ export const getBalanceStatement = async () => {
         case "office_expense":
           expenseOutSum += amount;
           break;
-        case "container_expense":
-          containerExpenseOutSum += amount;
-          break;
         case "bill_out":
           billOutSum += amount;
           break;
@@ -102,7 +98,6 @@ export const getBalanceStatement = async () => {
       capitalInSum,
       capitalOutSum,
       expenseOutSum,
-      containerExpenseOutSum,
       billOutSum,
       ...bank.toJSON(),
     };
@@ -125,7 +120,6 @@ export const getAssetStatement = async () => {
     let capitalInSum = 0;
     let capitalOutSum = 0;
     let expenseOutSum = 0;
-    let containerExpenseOutSum = 0;
 
     bank.payments?.forEach(payment => {
       const amount = Number(payment.amountPaid) || 0;
@@ -140,9 +134,6 @@ export const getAssetStatement = async () => {
         case "office_expense":
           expenseOutSum += amount;
           break;
-        case "container_expense":
-          containerExpenseOutSum += amount;
-          break;
       }
     });
 
@@ -150,7 +141,6 @@ export const getAssetStatement = async () => {
       capitalInSum,
       capitalOutSum,
       expenseOutSum,
-      containerExpenseOutSum,
       ...bank.toJSON(),
     };
   });

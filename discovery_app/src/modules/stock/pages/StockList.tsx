@@ -69,7 +69,6 @@ export default function StockList() {
       const invoiceDate = i.invoice?.date ? String(i.invoice.date) : "";
       const invoiceNo = i.invoiceRefNo ?? "";
       const itemName = i.item?.name ?? "";
-      const containerNo = i.container?.containerNo ?? "";
       const stockRefNo = i.stockRefNo ?? "";
       const partyName = i.party?.name ?? "";
 
@@ -77,7 +76,6 @@ export default function StockList() {
         invoiceDate.toLowerCase().includes(search) ||
         invoiceNo.toLowerCase().includes(search) ||
         itemName.toLowerCase().includes(search) ||
-        containerNo.toLowerCase().includes(search) ||
         stockRefNo.toLowerCase().includes(search) ||
         partyName.toLowerCase().includes(search)
       );
@@ -177,10 +175,6 @@ export default function StockList() {
                   <TableCell isHeader className="border border-gray-500 text-center px-4 py-1">Reference No</TableCell>
                   <TableCell isHeader className="border border-gray-500 text-center px-4 py-1">Stock Type</TableCell>
                   <TableCell isHeader className="border border-gray-500 text-center px-4 py-1">Invoice Ref</TableCell>
-                  {!categories.find((c) => ["currency", "gold"].includes(c.name.toLowerCase()) ) && (
-                    <TableCell isHeader className="border border-gray-500 text-center px-4 py-1">Container</TableCell>
-                  )}
-                  
                   {categories.find((c) => ["currency", "gold"].includes(c.name.toLowerCase()) ) ?
                   <TableCell isHeader className="border border-gray-500 text-center px-4 py-1">Stock Money</TableCell>
                   : <TableCell isHeader className="border border-gray-500 text-center px-4 py-1">Item Details</TableCell>
@@ -235,11 +229,6 @@ export default function StockList() {
                         {stock.invoiceRefNo ? stock.invoiceRefNo : "-"}
                       </TableCell>
                       
-                      {!categories.find((c) => ["currency", "gold"].includes(c.name.toLowerCase()) ) && (
-                        <TableCell className="border border-gray-500 text-center px-4 py-1 text-sm text-gray-500 dark:text-gray-400">
-                          {stock?.container?.containerNo}
-                        </TableCell>
-                      )}
                       <TableCell className="border border-gray-500 text-center px-4 py-1 text-sm text-gray-500 dark:text-gray-400">
                         {stock.item?.name}
                       </TableCell>

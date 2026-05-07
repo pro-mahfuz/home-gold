@@ -301,7 +301,7 @@ export default function App() {
               </PrivateRoute>} 
             />
 
-            <Route index path="/report/sale/:containerNo" element={
+            <Route index path="/report/sale" element={
               <PrivateRoute permissions={['report_sale']}>
                 <SaleReport />
               </PrivateRoute>} 

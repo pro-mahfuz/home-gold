@@ -35,7 +35,6 @@ import defineParty from './party.js';
 import defineCategory from './category.js';
 import defineUnit from './unit.js';
 import defineItem from './item.js';
-import defineContainer from './container.js';
 import defineInvoice from './invoice.js';
 import defineInvoiceItem from './invoiceItem.js';
 import definePayment from './payment.js';
@@ -53,7 +52,6 @@ const Unit = defineUnit(sequelize, Sequelize.DataTypes);
 const Item = defineItem(sequelize, Sequelize.DataTypes);
 const Bank = defineBank(sequelize, Sequelize.DataTypes);
 const Warehouse = defineWarehouse(sequelize, Sequelize.DataTypes);
-const Container = defineContainer(sequelize, Sequelize.DataTypes);
 const Permission = definePermission(sequelize, Sequelize.DataTypes);
 const Role = defineRole(sequelize, Sequelize.DataTypes);
 const User = defineUser(sequelize, Sequelize.DataTypes);
@@ -69,7 +67,7 @@ const GoldPriceIn = defineGoldPriceIn(sequelize, Sequelize.DataTypes);
 const Ledger = defineLedger(sequelize, Sequelize.DataTypes);
 
 // define your model for associate relations here...
-const models = { Business, StatusType, Role, Permission, RolePermission, User, Profile,  TokenStore, Party, Category, Unit, Item, Container, Invoice, InvoiceItem, Payment, Warehouse, Bank, Stock, GoldPriceIn, Ledger };
+const models = { Business, StatusType, Role, Permission, RolePermission, User, Profile,  TokenStore, Party, Category, Unit, Item, Invoice, InvoiceItem, Payment, Warehouse, Bank, Stock, GoldPriceIn, Ledger };
 // Call associate on each model if defined
 Object.values(models).forEach((model) => {
   if (model.associate) {
@@ -92,7 +90,6 @@ export {
   Category,
   Unit,
   Item,
-  Container,
   Invoice,
   InvoiceItem,
   Payment,

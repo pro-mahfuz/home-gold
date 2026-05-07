@@ -1,4 +1,4 @@
-import { Invoice, InvoiceItem, User, Payment, Item, Container, Warehouse, Stock, Ledger, Category, Party, sequelize } from "../../models/model.js";
+import { Invoice, InvoiceItem, User, Payment, Item, Warehouse, Stock, Ledger, Category, Party, sequelize } from "../../models/model.js";
 import { fn, col, Op, Sequelize } from "sequelize";
 
 const AUTO_PURCHASE_STOCK_TYPES = ["wholesale_purchase", "unfix_purchase", "fix_purchase"];
@@ -87,7 +87,6 @@ const getWarehouseAvailableStock = async ({
   itemId,
   unit,
   warehouseId,
-  containerId,
   transaction,
 }) => {
   const [summary] = await Stock.findAll({
@@ -101,7 +100,6 @@ const getWarehouseAvailableStock = async ({
       itemId,
       unit,
       warehouseId,
-      containerId: normalizeOptionalId(containerId),
     },
     raw: true,
     transaction,
@@ -141,8 +139,7 @@ const ensureAutoSaleItemsReady = async ({
       };
     }
 
-    const normalizedContainerId = normalizeOptionalId(item.containerId);
-    const key = `${item.itemId}_${item.unit}_${warehouseId}_${normalizedContainerId ?? "null"}`;
+    const key = `${item.itemId}_${item.unit}_${warehouseId}`;
 
     if (!acc[key]) {
       acc[key] = {
@@ -150,7 +147,6 @@ const ensureAutoSaleItemsReady = async ({
         itemName: item.name,
         unit: item.unit,
         warehouseId,
-        containerId: normalizedContainerId,
         quantity: 0,
       };
     }
@@ -165,7 +161,6 @@ const ensureAutoSaleItemsReady = async ({
       itemId: entry.itemId,
       unit: entry.unit,
       warehouseId: entry.warehouseId,
-      containerId: entry.containerId,
       transaction,
     });
 
@@ -205,7 +200,6 @@ const createAutoStockEntries = async ({
           partyId: invoice.partyId,
           categoryId: invoice.categoryId,
           itemId: item.itemId,
-          containerId: item.containerId ?? null,
           movementType,
           warehouseId: item.warehouseId ?? null,
           bankId: null,
@@ -415,7 +409,6 @@ export const getAllInvoice = async () => {
     include: [
       { model: InvoiceItem, as: "items" },
       { model: Category, as: "category" },
-      { model: Container, as: "container" },
       { model: Party, as: "party" },
       { model: Stock, as: "stocks" },
       { model: Payment, as: "payments" },
@@ -556,9 +549,8 @@ export const getAllInvoiceWithPagination = async (
 
   let whereClause = {};
   const include = [
-    { model: InvoiceItem, include: { model: Container, as: "container" }, as: "items" },
+    { model: InvoiceItem, as: "items" },
     { model: Category, as: "category" },
-    { model: Container, as: "container" },
     { model: Party, as: "party" },
     { model: Stock, as: "stocks" },
     { model: Payment, as: "payments" },
@@ -715,16 +707,12 @@ export const getPurchaseReport = async () => {
     include: [
       {
           model: InvoiceItem,
-          include: [{ model: Container, as: "container"}, { model: Warehouse, as: "warehouse"}],
+          include: [{ model: Warehouse, as: "warehouse"}],
           as: "items",
       },
       {
           model: Category,
           as: "category",
-      },
-      {
-          model: Container,
-          as: "container",
       },
       {
           model: Party,
@@ -810,16 +798,12 @@ export const getSaleReport = async () => {
     include: [
       {
           model: InvoiceItem,
-          include: [{ model: Container, as: "container"}, { model: Warehouse, as: "warehouse"}],
+          include: [{ model: Warehouse, as: "warehouse"}],
           as: "items",
       },
       {
           model: Category,
           as: "category",
-      },
-      {
-          model: Container,
-          as: "container",
       },
       {
           model: Party,
@@ -904,47 +888,6 @@ export const getSaleReport = async () => {
   return invoiceData;
 }
 
-export const getSaleContainerReport = async () => {
-  const data = await InvoiceItem.findAll({
-    include: [
-      {
-        model: Invoice,
-        as: "invoice", // <-- fixed alias
-        include: [
-          { model: Party, as: "party" },
-        ],
-        order: [["date", "ASC"]],
-      },
-      {
-        model: Container,
-        as: "container",
-      },
-    ],
-  });
-
-  if (!data || data.length === 0) {
-    throw { status: 400, message: "No Invoice found" };
-  }
-
-  const invoiceData = data
-    .filter(i => i.invoice.invoiceType === "sale")
-    .map(item => {
-      const invoiceNo = `${item.invoice.prefix}-${String(item.invoice.id).padStart(6, "0")}`;
-      const vatInvoiceRefNo =
-        item.invoice.vatInvoiceNo > 0
-          ? `${item.invoice.prefix}-${String(item.invoice.vatInvoiceNo).padStart(6, "0")}`
-          : null;
-
-      return {
-        invoiceNo,
-        vatInvoiceRefNo,
-        ...item.toJSON(),
-      };
-    });
-
-  return invoiceData;
-};
-
 export const getSaleCashReport = async () => {
   // 1. Get all sales grouped by date
   const invoices = await Invoice.findAll({
@@ -1016,7 +959,7 @@ export const getBillReport = async () => {
     include: [
       {
         model: InvoiceItem,
-        include: [{ model: Container, as: "container"}, { model: Warehouse, as: "warehouse"}],
+        include: [{ model: Warehouse, as: "warehouse"}],
         as: "items",
       },
       { model: Category, as: "category" },
@@ -1068,7 +1011,6 @@ export const getProfitLossReport = async () => {
         include: [{ model: Party, as: "party" }],
       },
       { model: Item, as: "item" },
-      { model: Container, as: "container" },
     ],
   });
 
@@ -1076,7 +1018,7 @@ export const getProfitLossReport = async () => {
     throw { status: 400, message: "No Invoice found" };
   }
 
-  // Map grouped by containerId + itemId + unit
+  // Map grouped by itemId + unit + currency
   const itemsMap = new Map();
 
   for (const invoiceItem of data) {
@@ -1087,14 +1029,11 @@ export const getProfitLossReport = async () => {
     if (!item) continue;
 
     const currency = invoice.currency;
-    const containerId = invoiceItem.containerId || "NA";
     const unit = invoiceItem.unit || "NA";
-    const key = `${containerId}_${item.id}_${unit}_${currency}`;
+    const key = `${item.id}_${unit}_${currency}`;
 
     if (!itemsMap.has(key)) {
       itemsMap.set(key, {
-        containerId: invoiceItem.containerId || null,
-        containerNo: invoiceItem.container?.containerNo || null,
         itemId: item.id,
         itemName: item.name,
         itemUnit: unit,
@@ -1158,7 +1097,6 @@ export const getDailyProfitLossReport = async () => {
         include: [{ model: Party, as: "party" }],
       },
       { model: Item, as: "item" },
-      { model: Container, as: "container" }
     ],
     order: [[{ model: Invoice, as: "invoice" }, "date", "ASC"]],
   });
@@ -1178,9 +1116,8 @@ export const getDailyProfitLossReport = async () => {
     if (!item) continue;
 
     const currency = invoice.currency;
-    const containerId = invoiceItem.containerId || "NA";
     const unit = invoiceItem.unit || "NA";
-    const itemKey = `${date}_${containerId}_${item.id}_${unit}_${currency}`;
+    const itemKey = `${date}_${item.id}_${unit}_${currency}`;
 
     
 
@@ -1191,8 +1128,6 @@ export const getDailyProfitLossReport = async () => {
         itemId: item.id,
         itemName: item.name,
         itemUnit: invoiceItem.unit,
-        containerNo: invoiceItem.container?.containerNo || null,
-        containerId: invoiceItem.containerId || null,
         purchaseAmount: 0,
         purchaseQty: 0,
         saleQty: 0,
@@ -1232,7 +1167,7 @@ export const getDailyProfitLossReport = async () => {
 
     // Optionally, get running purchase avg up to this date
     const { preRemainingPurchaseQty, preRemainingPurchaseAmount } =
-      await getPurchaseSumUpToDate(invoice.date, entry.itemId, entry.itemUnit, entry.containerId);
+      await getPurchaseSumUpToDate(invoice.date, entry.itemId, entry.itemUnit);
 
     entry.totalPurchaseAmount = entry.purchaseAmount + preRemainingPurchaseAmount;
     entry.totalPurchaseQty = entry.purchaseQty + preRemainingPurchaseQty;
@@ -1259,7 +1194,7 @@ export const getDailyProfitLossReport = async () => {
   return report;
 };
 
-export const getPurchaseSumUpToDate = async (endDate, itemId, itemUnit, containerId) => {
+export const getPurchaseSumUpToDate = async (endDate, itemId, itemUnit) => {
   const invoiceWhere = {
     invoiceType: {
       [Op.in]: [
@@ -1293,7 +1228,6 @@ export const getPurchaseSumUpToDate = async (endDate, itemId, itemUnit, containe
     where: {
       unit: itemUnit,
       itemId,
-      containerId,
     },
     raw: true,
     nest: true,
@@ -1402,41 +1336,6 @@ export const getSalePaymentReport = async () => {
   }));
 };
 
-export const getContainerExpenseReport = async () => {
-  const data = await Invoice.findAll({
-    where: { invoiceType: "purchase" },
-    include: [
-      { model: Party, as: "party" },
-      { model: Payment, as: "payments", where: { paymentType: "container_Expense" } },
-    ],
-  });
-
-  if (!data || data.length === 0) {
-    throw { status: 400, message: "No Invoice found" };
-  }
-
-  // Add totalPaidAmount to each invoice
-  const result = data.map(invoice => {
-
-    const invoiceNo = invoice.prefix + "-" + String(invoice.id).padStart(6, '0');
-    const vatInvoiceRefNo = invoice.vatInvoiceNo > 0 ? invoice.prefix + "-" + String(invoice.vatInvoiceRefNo).padStart(6, '0') : null;
-
-    const totalPaidAmount = invoice.payments?.reduce(
-      (sum, payment) => sum + (Number(payment.amountPaid) || 0),
-      0
-    ) || 0;
-
-    return {
-      ...invoice.toJSON(),
-      invoiceNo,
-      vatInvoiceRefNo,
-      totalPaidAmount,
-    };
-  });
-
-  return result;
-};
-
 export const createInvoice = async (req) => {
   const { items, ...invoiceData } = req.body;
   const requestedType = invoiceData.invoiceType?.toLowerCase();
@@ -1475,7 +1374,6 @@ export const createInvoice = async (req) => {
         invoiceId: invoice.id,
         itemId: item.itemId,
         uniqueId: item.uniqueId,
-        containerId: item.containerId ?? null,
         warehouseId: item.warehouseId,
         name: item.name,
         quantity: item.quantity,
@@ -1618,7 +1516,6 @@ export const createInvoice = async (req) => {
               partyId: invoice.partyId,
               categoryId: invoice.categoryId,
               itemId: item.itemId,
-              containerId: item.containerId ?? null,
               movementType: invoice.invoiceType === "sale" ? "stock_out" : "stock_in",
               warehouseId: item.warehouseId,
               bankId: null,
@@ -1635,7 +1532,6 @@ export const createInvoice = async (req) => {
           const paymentPrefixMap = {
             payment_in: "PMI",
             payment_out: "PMO",
-            container_expense: "CEX",
             office_expense: "OEX",
           };
           const paymentPrefix = paymentPrefixMap["payment_in"] || "";
@@ -1701,11 +1597,10 @@ export const getInvoiceById = async (id) => {
         include: [
           {
             model: InvoiceItem,
-            include: [{ model: Container, as: "container"}, { model: Warehouse, as: "warehouse"}],
+            include: [{ model: Warehouse, as: "warehouse"}],
             as: "items",
           },
           { model: Category, as: "category" },
-          { model: Container, as: "container" },
           { model: Party, as: "party" },
           { model: Stock, as: "stocks" },
           { model: Payment, as: "payments" },
@@ -1770,7 +1665,6 @@ export const updateInvoice = async (req) => {
                 uniqueId: item.uniqueId,
                 invoiceId: invoice.id,
                 itemId: item.itemId,
-                containerId: item.containerId ?? null,
                 warehouseId: item.warehouseId,
                 name: item.name,
                 quantity: item.quantity,
@@ -1924,7 +1818,6 @@ export const updateInvoice = async (req) => {
                   partyId: invoice.partyId,
                   categoryId: invoice.categoryId,
                   itemId: item.itemId,
-                  containerId: item.containerId ?? null,
                   movementType: invoice.invoiceType === "sale" ? "stock_out" : "stock_in",
                   bankId: null,
                   quantity: item.quantity,
@@ -1947,7 +1840,6 @@ export const updateInvoice = async (req) => {
               const paymentPrefixMap = {
                 payment_in: "PMI",
                 payment_out: "PMO",
-                container_expense: "CEX",
                 office_expense: "OEX",
               };
               const paymentPrefix = paymentPrefixMap["payment_in"] || "";

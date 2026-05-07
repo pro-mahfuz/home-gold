@@ -18,10 +18,6 @@ export default (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false,
     },
-    containerId: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-    },
     warehouseId: {
       type: DataTypes.INTEGER,
       allowNull: true,
@@ -83,10 +79,6 @@ export default (sequelize, DataTypes) => {
     InvoiceItem.belongsTo(models.Item, {
       foreignKey: "itemId",
       as: "item",
-    });
-    InvoiceItem.belongsTo(models.Container, {
-      foreignKey: "containerId",
-      as: "container",
     });
     InvoiceItem.belongsTo(models.Warehouse, {
       foreignKey: "warehouseId",

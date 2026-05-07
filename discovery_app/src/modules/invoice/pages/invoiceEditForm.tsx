@@ -98,8 +98,6 @@ export default function InvoiceEditForm() {
 
     const [currentItem, setCurrentItem] = useState<Item>({
         itemId: 0,
-        containerId: null,
-        containerNo: null,
         name: "",
         price: 0,
         vatPercentage: 0,
@@ -238,7 +236,6 @@ export default function InvoiceEditForm() {
 
         setCurrentItem({
             itemId: 0,
-            containerId: null,
             uniqueId: Date.now(),
             name: '',
             price: 0,
@@ -602,9 +599,6 @@ export default function InvoiceEditForm() {
                     <TableRow>
                         <TableCell isHeader className="text-center px-4 py-2">Sl</TableCell>
                         <TableCell isHeader className="text-center px-4 py-2">Item</TableCell>
-                        { !isStockCategory && (
-                            <TableCell isHeader className="text-center px-4 py-2">Container</TableCell>
-                        )}
                         <TableCell isHeader className="text-center px-4 py-2">Quantity</TableCell>
                         <TableCell isHeader className="text-center px-4 py-2">Unit</TableCell>
                         <TableCell isHeader className="text-center px-4 py-2">Price</TableCell>

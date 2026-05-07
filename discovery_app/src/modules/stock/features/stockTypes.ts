@@ -1,4 +1,3 @@
-import { Container } from "../../container/features/containerTypes";
 import { Warehouse } from "../../warehouse/features/warehouseTypes";
 import { Item } from "../../item/features/itemTypes";
 import { Business } from "../../business/features/businessTypes";
@@ -9,7 +8,6 @@ import { Party } from "../../party/features/partyTypes";
 export interface Stock {
   id?: number;
   business?: Business;
-  container?: Container;
   item?: Item;
   warehouse?: Warehouse;
   bank?: Account;
@@ -31,7 +29,6 @@ export interface Stock {
   unit?: string;
   invoiceRefNo?: string;
   stockRefNo?: string;
-  containerId?: number | null;
 
   createdBy?: number;
   updatedBy?: number;
@@ -44,10 +41,7 @@ export interface StockReport {
   party?: Party;
   warehouseId?: number | null;
   warehouse?: Warehouse;
-  containerId: number;
   itemId: number;
-  containerNo?: string;
-  container: Container;
   unit?: string;
   itemName?: string;
   item: Item;

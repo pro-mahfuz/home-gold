@@ -40,7 +40,7 @@ export default function BalanceStatement() {
   const totalBalanceByCurrency = useMemo(() => {
     return balanceReports.reduce((acc, { 
       currency, openingBalance, stockInSum, stockOutSum, paymentInSum, paymentOutSum, 
-      capitalInSum, capitalOutSum, advanceInSum, advanceOutSum, expenseOutSum, containerExpenseOutSum, billOutSum
+      capitalInSum, capitalOutSum, advanceInSum, advanceOutSum, expenseOutSum, billOutSum
     }) => {
       if (!currency) return acc;
 
@@ -57,7 +57,6 @@ export default function BalanceStatement() {
           advanceIn: 0,
           advanceOut: 0,
           expenseOut: 0,
-          containerExpense: 0,
           billOut: 0,
           paymentBalance: 0,
           balance: 0,
@@ -77,13 +76,12 @@ export default function BalanceStatement() {
       acc[currency].advanceIn += Number(advanceInSum) || 0;
       acc[currency].advanceOut += Number(advanceOutSum) || 0;
       acc[currency].expenseOut += Number(expenseOutSum) || 0;
-      acc[currency].containerExpense += Number(containerExpenseOutSum) || 0;
       acc[currency].billOut += Number(billOutSum) || 0;
       acc[currency].paymentBalance += (Number(paymentInSum) - Number(paymentOutSum)) || 0;
       acc[currency].balance += Number(openingBalance) + Number(stockInSum) - Number(stockOutSum) + Number(paymentInSum) - Number(paymentOutSum) || 0;
 
       acc[currency].cashIn += (Number(openingBalance ?? 0) + Number(capitalInSum ?? 0) + Number(advanceInSum ?? 0) + Number(stockInSum ?? 0) + Number(paymentInSum ?? 0));
-      acc[currency].cashOut += (Number(capitalOutSum ?? 0) + Number(advanceOutSum ?? 0) + Number(stockOutSum ?? 0) + Number(paymentOutSum ?? 0) + Number(expenseOutSum ?? 0) + Number(containerExpenseOutSum ?? 0) + Number(billOutSum ?? 0));
+      acc[currency].cashOut += (Number(capitalOutSum ?? 0) + Number(advanceOutSum ?? 0) + Number(stockOutSum ?? 0) + Number(paymentOutSum ?? 0) + Number(expenseOutSum ?? 0) + Number(billOutSum ?? 0));
 
       return acc;
     }, {} as Record<string, {
@@ -98,7 +96,6 @@ export default function BalanceStatement() {
       advanceIn: number;
       advanceOut: number;
       expenseOut: number;
-      containerExpense: number;
       billOut: number;
       paymentBalance: number;
       balance: number;
@@ -184,9 +181,6 @@ export default function BalanceStatement() {
                     <TableCell isHeader className="border border-gray-500 text-center px-2 py-1">(+) Payment (In)</TableCell>
                     <TableCell isHeader className="border border-gray-500 text-center px-2 py-1">(-) Payment (Out)</TableCell>
                     <TableCell isHeader className="border border-gray-500 text-center px-2 py-1">(-) Bill</TableCell>
-                    {!categories.find((c) => ["currency", "gold"].includes(c.name.toLowerCase())) && (
-                      <TableCell isHeader className="border border-gray-500 text-center px-2 py-1">(-) Exense (Container)</TableCell>
-                    )}
                     <TableCell isHeader className="border border-gray-500 text-center px-2 py-1">(-) Exense</TableCell>
                     <TableCell isHeader className="border border-gray-500 text-center px-2 py-1">Balance</TableCell>
                   </TableRow>
@@ -259,19 +253,13 @@ export default function BalanceStatement() {
                             {Number(balance.billOutSum) > 0 ? Number(balance.billOutSum).toFixed(2) : "-"}
                           </TableCell>
 
-                          {!categories.find((c) => ["currency", "gold"].includes(c.name.toLowerCase())) && (
-                            <TableCell className="border border-gray-500 text-center px-2 py-1 text-sm text-gray-500 dark:text-gray-400">
-                              {Number(balance.containerExpenseOutSum) > 0 ? Number(balance.containerExpenseOutSum).toFixed(2) : "-"}
-                            </TableCell>
-                          )}
-
                           <TableCell className="border border-gray-500 text-center px-2 py-1 text-sm text-gray-500 dark:text-gray-400">
                             {Number(balance.expenseOutSum) > 0 ? Number(balance.expenseOutSum).toFixed(2) : "-"}
                           </TableCell>
                           
                           <TableCell className="font-semibold text-center px-2 py-1 text-sm text-gray-500 dark:text-gray-400 flex justify-between gap-2">
                             <div>{"(" + balance.currency + ")" }</div>
-                            <div>{(Number(balance.openingBalance ?? 0) + Number(balance.capitalInSum ?? 0) - Number(balance.capitalOutSum ?? 0) + Number(balance.advanceInSum ?? 0) - Number(balance.advanceOutSum ?? 0) + (Number(balance.stockInSum ?? 0) - Number(balance.stockOutSum ?? 0)) + (Number(balance.paymentInSum ?? 0) - Number(balance.paymentOutSum ?? 0)) - Number(balance.expenseOutSum ?? 0) - Number(balance.containerExpenseOutSum ?? 0) - Number(balance.billOutSum ?? 0)).toFixed(2)}</div> 
+                            <div>{(Number(balance.openingBalance ?? 0) + Number(balance.capitalInSum ?? 0) - Number(balance.capitalOutSum ?? 0) + Number(balance.advanceInSum ?? 0) - Number(balance.advanceOutSum ?? 0) + (Number(balance.stockInSum ?? 0) - Number(balance.stockOutSum ?? 0)) + (Number(balance.paymentInSum ?? 0) - Number(balance.paymentOutSum ?? 0)) - Number(balance.expenseOutSum ?? 0) - Number(balance.billOutSum ?? 0)).toFixed(2)}</div> 
                           </TableCell>
                         </TableRow>
                       ))}
@@ -296,9 +284,6 @@ export default function BalanceStatement() {
                           <TableCell className="border border-gray-500 bg-gray-200 font-semibold text-center border-l border-gray-500 text-center px-2 py-2">{totals.paymentOut.toFixed(2)}</TableCell>
 
                           <TableCell className="border border-gray-500 bg-gray-200 font-semibold text-center border-l border-gray-500 text-center px-2 py-2">{totals.billOut.toFixed(2)}</TableCell>
-                          {!categories.find((c) => ["currency", "gold"].includes(c.name.toLowerCase())) && (
-                            <TableCell className="border border-gray-500 bg-gray-200 font-semibold text-center border-l border-gray-500 text-center px-2 py-2">{totals.containerExpense.toFixed(2)}</TableCell>
-                          )}
                           <TableCell className="border border-gray-500 bg-gray-200 font-semibold text-center border-l border-gray-500 text-center px-2 py-2">{totals.expenseOut.toFixed(2)}</TableCell>
                           <TableCell className="border border-gray-500 bg-gray-200 font-semibold text-center border-l border-gray-500 text-center px-2 py-2">{(totals.cashIn - totals.cashOut).toFixed(2)}</TableCell>
 

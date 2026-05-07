@@ -54,10 +54,6 @@ export default (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: true,
     },
-    containerId: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-    },
     itemId: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -96,7 +92,6 @@ export default (sequelize, DataTypes) => {
     Stock.belongsTo(models.Warehouse, { foreignKey: 'warehouseId', as: 'warehouse' });
     Stock.belongsTo(models.Bank, { foreignKey: 'bankId', as: 'bank' });
     Stock.belongsTo(models.Business, { foreignKey: 'businessId', as: 'business' });
-    Stock.belongsTo(models.Container, { foreignKey: 'containerId', as: 'container' });
     Stock.belongsTo(models.User, { foreignKey: 'createdBy', as: 'createdByUser' });
     Stock.belongsTo(models.User, { foreignKey: 'updatedBy', as: 'updatedByUser' });
     Stock.belongsTo(models.User, { foreignKey: 'deletedBy', as: 'deletedByUser' });

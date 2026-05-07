@@ -45,16 +45,6 @@ export const getSaleReport = async (req, res, next) =>{
     }
 }
 
-export const getSaleContainerReport = async (req, res, next) =>{
-    try {
-        const data = await InvoiceService.getSaleContainerReport();
-        return success(res, data, "Response successful");
-
-    } catch (err) {
-        return error(res, err.message, err.status || 500);
-    }
-}
-
 export const getSaleCashReport = async (req, res, next) =>{
     try {
         const data = await InvoiceService.getSaleCashReport();

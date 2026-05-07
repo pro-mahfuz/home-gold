@@ -1,7 +1,6 @@
 import { Category } from "../../category/features/categoryTypes";
 import { Party } from "../../party/features/partyTypes";
 import { Item } from "../../item/features/itemTypes.ts";
-import { Container } from "../../container/features/containerTypes.ts";
 import { User } from "../../user/features/userTypes.ts";
 import { Business } from "../../business/features/businessTypes.ts";
 
@@ -18,8 +17,6 @@ export interface Invoice {
   businessId?: number;   
   business?: Business;              
   categoryId: number | string;
-  containerId?: number;
-  container?: Container;
   prefix?: string;
   invoiceNo?: string;
   invoiceType?: string;
@@ -61,7 +58,6 @@ export interface Invoice {
 
 export interface ProfitLoss {
   date: string;
-  containerNo?: string;
   itemName: string;
   itemUnit: string;
   totalPurchaseAmount: number;
@@ -100,7 +96,6 @@ export interface InvoiceState {
   dataPaginated: Invoice[];
   saleReport: Invoice[];
   purchaseReport: Invoice[];
-  saleContainerReport: Item[];
   saleCashReport: SaleCashReport[];
   billReport: Invoice[];
   salePaymentReport: CustomerCashReport[];

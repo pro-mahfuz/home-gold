@@ -36,7 +36,6 @@ export const create = async (createData: Stock) => {
           categoryId: createData.categoryId,
           invoiceId: createData.invoiceId,
           itemId: createData.itemId,
-          containerId: createData.containerId,
           unit: createData.unit,
           quantity: createData.quantity,
           warehouseId: createData.warehouseId,

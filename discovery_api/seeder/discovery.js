@@ -1,7 +1,7 @@
 import { hash } from "bcryptjs";
 import dotenv from "dotenv";
 dotenv.config();
-import { Business, Role, User, Container, Bank, StatusType, Unit, Warehouse, Category, Item } from "../models/model.js"; // Adjust the path as needed
+import { Business, Role, User, Bank, StatusType, Unit, Warehouse, Category, Item } from "../models/model.js"; // Adjust the path as needed
 import { faker } from '@faker-js/faker';
 
 export async function discoverySeed(permissions) {
@@ -38,7 +38,6 @@ export async function discoverySeed(permissions) {
     { businessId: Discovery.id, group: "sale", name: "Wholesale Sale", value: "sale", isActive: true },
 
     { businessId: Discovery.id, group: "expense", name: "Expense-Office", value: "expense_office", isActive: true },
-    { businessId: Discovery.id, group: "expense", name: "Expense-Container", value: "expense_container", isActive: true },
   ]);
 
   // Unit
@@ -116,22 +115,6 @@ export async function discoverySeed(permissions) {
       name: "Garlic P.W",
       isActive: true,
     }
-  ]);
-
-  // Container
-  await Container.bulkCreate([
-    {
-      businessId: Discovery.id,
-      date: "2025-08-10",
-      blNo: "BL256325",
-      soNo: "SO325684",
-      oceanVesselName: "TS KEELUNG",
-      voyageNo: "",
-      agentDetails: "T.S LINES (U.A.E) L.L.C",
-      containerNo: "OTPU6602650/40RH",
-      sealNo: "SL325688",
-      isActive: true
-    },
   ]);
 
   // Warehouse

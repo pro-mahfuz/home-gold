@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -30,21 +30,18 @@ import { fetchParty } from "../../party/features/partyThunks.ts";
 import { selectStyles } from "../../types.ts";
 
 export default function PurchaseReport() {
-  const { containerNo } = useParams()
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
-  const [container, setContainer] = useState('');
   const [partyId, setPartyId] = useState(0);
 
   useEffect(() => {
     dispatch(fetchParty({ type: "all" }))
     dispatch(getPurchaseReport());
     dispatch(fetchAllCategory());
-    setContainer(containerNo ?? '');
-  }, [dispatch, containerNo]);
+  }, [dispatch]);
 
   const authUser = useSelector(selectAuth);
   const user = useSelector(selectUserById(Number(authUser.user?.id)));
@@ -62,8 +59,8 @@ export default function PurchaseReport() {
   );
 
   const purchaseReportSelector = useMemo(
-    () => selectPurchaseReport(fromDate, toDate, container, partyId),
-    [fromDate, toDate, container, partyId]
+    () => selectPurchaseReport(fromDate, toDate, partyId),
+    [fromDate, toDate, partyId]
   );
 
   const purchaseReports = useSelector(purchaseReportSelector);
@@ -163,11 +160,10 @@ export default function PurchaseReport() {
                         Purchase Report
                     </h6>
                     <h6 className="text-sm font-semibold text-gray-800 dark:text-white/90 mt-5">
-                        { fromDate && toDate && !container ? "Date: " + fromDate + " to " + toDate : "" }
-                        { !fromDate && toDate && !container ? "Date: " + toDate : "" }
+                        { fromDate && toDate ? "Date: " + fromDate + " to " + toDate : "" }
+                        { !fromDate && toDate ? "Date: " + toDate : "" }
                         { fromDate && !toDate ? "Date: " + fromDate : "" }
-                        { !fromDate && !toDate && container ? "Container No: " + container : "" }
-                        { !fromDate && !toDate && !container && partyId > 0 ? "Customer Name: " + matchingParties.find(p => p.id === partyId)?.name : "" }
+                        { !fromDate && !toDate && partyId > 0 ? "Customer Name: " + matchingParties.find(p => p.id === partyId)?.name : "" }
                     </h6>
                   </div>
                 </div>
@@ -183,15 +179,6 @@ export default function PurchaseReport() {
                       <TableCell isHeader className="border border-gray-500 text-center px-2 py-1 max-w-[150px] truncate">Customer</TableCell>
                     )}
 
-                    { !categories.find((c) => ["currency", "gold"].includes(c.name.toLowerCase())) && (
-                      <TableCell
-                        isHeader
-                        className="border border-gray-500 text-center px-2 py-1 max-w-[150px] truncate"
-                      >
-                        Container
-                      </TableCell>
-                    )}
-                    
                     <TableCell isHeader className="border border-gray-500 text-center px-2 py-1">Item</TableCell>
                     <TableCell isHeader className="border border-gray-500 text-center px-2 py-1">Unit</TableCell>
                     <TableCell isHeader className="border border-gray-500 text-center px-2 py-1">Qty</TableCell>
@@ -273,17 +260,6 @@ export default function PurchaseReport() {
                           </TableCell>
                           )}
                           
-                          { !categories.find((c) => ["currency", "gold"].includes(c.name.toLowerCase())) && (
-                            <TableCell className="border border-gray-500 text-center px-2 py-1 text-sm text-gray-500 dark:text-gray-400">
-                              {invoice.items.map((item, index) => (
-                                <div key={index}>
-                                  {item.container?.containerNo}
-                                  {index < invoice.items.length - 1 && <br />}
-                                </div>
-                              ))}
-                            </TableCell>
-                          )}
-            
                           <TableCell className="border border-gray-500 text-center px-2 py-1 text-sm text-gray-500 dark:text-gray-400">
                             {invoice.items.map((item, index) => (
                               <div key={index}>

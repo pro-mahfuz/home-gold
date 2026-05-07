@@ -73,7 +73,6 @@ export default function StockCreateForm() {
         partyId: undefined,
         categoryId: 0,
         itemId: 0,
-        containerId: null,
         movementType: '',
         warehouseId: null,
         bankId: null,

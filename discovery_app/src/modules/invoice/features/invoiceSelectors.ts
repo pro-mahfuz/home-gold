@@ -96,11 +96,11 @@ export const selectDailyProfitLossReportByDate = (fromDate?: string, toDate?: st
 
 export const selectCustomerOutstandingReport = (state: RootState): CustomerCashReport[] => state.invoice.salePaymentReport || [];
 
-export const selectPurchaseReport = ( fromDate?: string, toDate?: string, containerNo?: string, partyId?: number) =>
+export const selectPurchaseReport = ( fromDate?: string, toDate?: string, partyId?: number) =>
   createSelector([selectAllPurchaseInvoice], (invoices: Invoice[]) => {
     // --- If searching only by partyId, skip date filter entirely ---
     const onlyPartySearch =
-      Number(partyId) > 0 && !fromDate && !toDate && !containerNo;
+      Number(partyId) > 0 && !fromDate && !toDate;
 
     // --- Default to current month if not provided ---
     const now = new Date();
@@ -129,17 +129,11 @@ export const selectPurchaseReport = ( fromDate?: string, toDate?: string, contai
         ? true // ignore date filters
         : date >= from && date <= to;
 
-      const containerMatch = containerNo
-        ? inv.items?.some(
-            (item) =>
-              item.container?.containerNo?.toLowerCase() ===
-              containerNo.toLowerCase()
-          )
-        : true;
+      
 
       const partyMatch = Number(partyId) > 0 ? inv.partyId === partyId : true;
 
-      return dateMatch && containerMatch && partyMatch;
+      return dateMatch && partyMatch;
     });
 
     // --- Totals helper ---
@@ -176,16 +170,14 @@ export const selectPurchaseReport = ( fromDate?: string, toDate?: string, contai
 export const selectSaleReport = (
   fromDate?: string,
   toDate?: string,
-  containerNo?: string,
   partyId?: number
 ) =>
   createSelector([selectAllSaleInvoice], (invoices: Invoice[]) => {
     const hasParty = Number(partyId) > 0;
-    const hasContainer = !!containerNo;
 
     // 🔹 If searching ONLY by party
     const onlyPartySearch =
-      hasParty && !fromDate && !toDate && !containerNo;
+      hasParty && !fromDate && !toDate;
 
     // 🔹 Date range (default = current month)
     const now = new Date();
@@ -223,19 +215,13 @@ export const selectSaleReport = (
         ? true
         : date >= from && date <= to;
 
-      const containerMatch = hasContainer
-        ? inv.items?.some(
-            item =>
-              item.container?.containerNo?.toLowerCase() ===
-              containerNo!.toLowerCase()
-          )
-        : true;
+      
 
       const partyMatch = hasParty
         ? inv.partyId === partyId
         : true;
 
-      return dateMatch && containerMatch && partyMatch;
+      return dateMatch && partyMatch;
     });
 
     // 🔹 Totals
@@ -418,11 +404,11 @@ export const selectMonthlySales = createSelector(
 
 export const selectTotalSaleOrder = createSelector([selectAllSaleInvoice],(invoices: Invoice[]) => invoices.length);
 
-export const selectSaleReport_system_2 = ( fromDate?: string, toDate?: string, containerNo?: string, partyId?: number) =>
+export const selectSaleReport_system_2 = ( fromDate?: string, toDate?: string, partyId?: number) =>
   createSelector([selectAllSaleInvoice], (invoices: Invoice[]) => {
     // --- If searching only by partyId, skip date filter entirely ---
     const onlyPartySearch =
-      Number(partyId) > 0 && !fromDate && !toDate && !containerNo;
+      Number(partyId) > 0 && !fromDate && !toDate;
 
     // --- Default to current month if not provided ---
     const now = new Date();
@@ -451,17 +437,11 @@ export const selectSaleReport_system_2 = ( fromDate?: string, toDate?: string, c
         ? inv.system === 2 || inv.isVat === true // ignore dates
         : date >= from && date <= to && (inv.system === 2 || inv.isVat === true);
 
-      const containerMatch = containerNo && (inv.system === 2 || inv.isVat === true)
-        ? inv.items?.some(
-            (item) =>
-              item.container?.containerNo?.toLowerCase() ===
-              containerNo.toLowerCase()
-          )
-        : true;
+      
 
       const partyMatch = Number(partyId) > 0 && (inv.system === 2 || inv.isVat === true) ? inv.partyId === partyId : true;
 
-      return dateMatch && containerMatch && partyMatch;
+      return dateMatch && partyMatch;
     });
 
     // --- Totals helper ---
@@ -495,115 +475,6 @@ export const selectSaleReport_system_2 = ( fromDate?: string, toDate?: string, c
   }
 );
 
-export const selectSaleContainerReport = (
-  fromDate?: string,
-  toDate?: string,
-  containerNo?: string
-) =>
-  createSelector(
-    (state: RootState) => state.invoice.saleContainerReport || [],
-    (items) => {
-      if (!items.length)
-        return {
-          items: [],
-          previous: { netTotal: 0, vatTotal: 0, grandTotal: 0, qtyTotal: 0 },
-          current: { netTotal: 0, vatTotal: 0, grandTotal: 0, qtyTotal: 0 },
-          overall: { netTotal: 0, vatTotal: 0, grandTotal: 0, qtyTotal: 0 },
-        };
-
-      const now = new Date();
-      const defaultFrom = new Date(now.getFullYear(), now.getMonth(), 1);
-      const defaultTo = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-      // Handle filter cases
-      const isContainerOnlySearch = !fromDate && !toDate && !!containerNo;
-      const isShowAll = !fromDate && !toDate && !containerNo;
-
-      const from = fromDate ? new Date(fromDate) : defaultFrom;
-      from.setHours(0, 0, 0, 0);
-
-      const to = toDate ? new Date(toDate) : defaultTo;
-      to.setHours(23, 59, 59, 999);
-
-      const totals = {
-        previous: { netTotal: 0, vatTotal: 0, grandTotal: 0, qtyTotal: 0 },
-        current: { netTotal: 0, vatTotal: 0, grandTotal: 0, qtyTotal: 0 },
-      };
-
-      const filtered = items.filter((item) => {
-        const invoiceDate = new Date(item.invoice?.date ?? "");
-        if (isNaN(invoiceDate.getTime())) return false;
-
-        const net = Number(item.subTotal ?? 0);
-        const vat =
-          item.invoice?.isVat === true
-            ? (net * Number(item.invoice?.vatPercentage ?? 0)) / 100
-            : 0;
-        const grand = net + vat;
-        const quantity = Number(item.quantity ?? 0);
-
-        // --- Container filter ---
-        const containerMatch = containerNo
-          ? item.container?.containerNo?.toLowerCase() ===
-            containerNo.toLowerCase()
-          : true;
-
-        // Case 1: Only container filter (no dates)
-        if (isContainerOnlySearch) {
-          if (!containerMatch) return false;
-          totals.current.netTotal += net;
-          totals.current.vatTotal += vat;
-          totals.current.grandTotal += grand;
-          totals.current.qtyTotal += quantity;
-          return true;
-        }
-
-        // Case 2: Show all (no filters)
-        if (isShowAll) {
-          totals.current.netTotal += net;
-          totals.current.vatTotal += vat;
-          totals.current.grandTotal += grand;
-          totals.current.qtyTotal += quantity;
-          return true;
-        }
-
-        // --- Previous totals (before range) ---
-        if (invoiceDate < from) {
-          totals.previous.netTotal += net;
-          totals.previous.vatTotal += vat;
-          totals.previous.grandTotal += grand;
-          totals.previous.qtyTotal += quantity;
-        }
-
-        // --- Current totals (within range) ---
-        const dateMatch = invoiceDate >= from && invoiceDate <= to;
-        if (dateMatch && containerMatch) {
-          totals.current.netTotal += net;
-          totals.current.vatTotal += vat;
-          totals.current.grandTotal += grand;
-          totals.current.qtyTotal += quantity;
-          return true;
-        }
-
-        return false;
-      });
-
-      return {
-        items: filtered,
-        previous: totals.previous,
-        current: totals.current,
-        overall: {
-          netTotal: totals.previous.netTotal + totals.current.netTotal,
-          vatTotal: totals.previous.vatTotal + totals.current.vatTotal,
-          grandTotal: totals.previous.grandTotal + totals.current.grandTotal,
-          qtyTotal: totals.previous.qtyTotal + totals.current.qtyTotal,
-        },
-      };
-    }
-  );
-
-
-
 export const selectSaleCashReport = (fromDate?: string, toDate?: string) => 
   createSelector(
   (state: RootState) => state.invoice.saleCashReport || [],
@@ -629,7 +500,7 @@ export const selectSaleCashReport = (fromDate?: string, toDate?: string) =>
   }
 );
 
-export const selectBillReport = (fromDate?: string, toDate?: string, containerNo?: string) => 
+export const selectBillReport = (fromDate?: string, toDate?: string) => 
   createSelector([selectAllBillReport], (invoices: Invoice[]) => {
   if (!invoices.length) {
     return {
@@ -660,14 +531,6 @@ export const selectBillReport = (fromDate?: string, toDate?: string, containerNo
     const invoiceDate = new Date(invoice?.date ?? "");
     if (isNaN(invoiceDate.getTime())) return false;
 
-    // --- Container filter ---
-    let containerMatch = true;
-    if (containerNo) {
-      containerMatch =
-        invoice.container?.containerNo?.toLowerCase() ===
-        containerNo.toLowerCase();
-    }
-
     // --- Calculate amounts ---
     const net = Number(invoice.totalAmount ?? 0);
     const vat =
@@ -690,7 +553,7 @@ export const selectBillReport = (fromDate?: string, toDate?: string, containerNo
     // --- Current date range filter ---
     const dateMatch = invoiceDate >= from && invoiceDate <= to;
 
-    if (dateMatch && containerMatch) {
+    if (dateMatch) {
       totals.current.netTotal += net;
       totals.current.vatTotal += vat;
       totals.current.grandTotal += grand;

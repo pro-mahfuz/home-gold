@@ -30,7 +30,6 @@ import * as CategoryController from "../modules/category/category.controller.js"
 import * as StatusController from "../modules/status/status.controller.js";
 import * as UnitController from "../modules/unit/unit.controller.js";
 import * as ItemController from "../modules/item/item.controller.js";
-import * as ContainerController from "../modules/container/container.controller.js";
 import * as InvoiceController from "../modules/invoice/invoice.controller.js";
 import * as PaymentController from "../modules/payment/payment.controller.js";
 import * as StockController from "../modules/stock/stock.controller.js";
@@ -128,9 +127,6 @@ router.put("/item/update", authorize("edit_item"), validate(itemSchema), ItemCon
 router.post("/item/:id/active", authorize("manage_item"), ItemController.activeItem);
 router.post("/item/:id/deactive", authorize("manage_item"), ItemController.deactiveItem);
 
-/*---Container---*/
-router.get("/container/list", ContainerController.getAllContainer);
-
 /*---Invoice---*/
 router.get("/invoice/list", authorize(["manage_purchase", "manage_sale", "report_sale", "report_expense"]), InvoiceController.getAllInvoice);
 router.post("/invoice/create", authorize(["create_purchase", "create_sale"]), validate(invoiceSchema), InvoiceController.createInvoice);
@@ -189,7 +185,6 @@ router.post("/stock/getStockReport", authorize("report_stock"), StockController.
 router.post("/stock/getOverallStockReport", authorize("report_stock"), StockController.getOverallStockReport);
 router.post("/invoice/getSaleReport", authorize("report_sale"), InvoiceController.getSaleReport);
 router.post("/invoice/getPurchaseReport", authorize("report_purchase"), InvoiceController.getPurchaseReport);
-router.post("/invoice/getSaleContainerReport", authorize("report_sale"), InvoiceController.getSaleContainerReport);
 router.post("/invoice/getSaleCashReport", authorize("report_sale"), InvoiceController.getSaleCashReport);
 router.post("/invoice/getBillReport", authorize("report_purchase"), InvoiceController.getBillReport);
 router.post("/invoice/getSalePaymentReport", authorize(["report_payment", "report_expense"]), InvoiceController.getSalePaymentReport);

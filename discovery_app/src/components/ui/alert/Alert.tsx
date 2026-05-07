@@ -20,22 +20,22 @@ const Alert: React.FC<AlertProps> = ({
   // Tailwind classes for each variant
   const variantClasses = {
     success: {
-      container:
+      wrapper:
         "border-success-500 bg-success-50 dark:border-success-500/30 dark:bg-success-500/15",
       icon: "text-success-500",
     },
     error: {
-      container:
+      wrapper:
         "border-error-500 bg-error-50 dark:border-error-500/30 dark:bg-error-500/15",
       icon: "text-error-500",
     },
     warning: {
-      container:
+      wrapper:
         "border-warning-500 bg-warning-50 dark:border-warning-500/30 dark:bg-warning-500/15",
       icon: "text-warning-500",
     },
     info: {
-      container:
+      wrapper:
         "border-blue-light-500 bg-blue-light-50 dark:border-blue-light-500/30 dark:bg-blue-light-500/15",
       icon: "text-blue-light-500",
     },
@@ -113,7 +113,7 @@ const Alert: React.FC<AlertProps> = ({
 
   return (
     <div
-      className={`rounded-xl border p-4 ${variantClasses[variant].container}`}
+      className={`rounded-xl border p-4 ${variantClasses[variant].wrapper}`}
     >
       <div className="flex items-start gap-3">
         <div className={`-mt-0.5 ${variantClasses[variant].icon}`}>

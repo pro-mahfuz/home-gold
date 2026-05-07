@@ -62,7 +62,6 @@ export default function ExpenseEditForm() {
         businessId: 0,
         invoiceId: null,
         categoryId: null,
-        containerId: 0,
         partyId: 0,
         paymentType: '',
         paymentDate: "",
@@ -83,7 +82,6 @@ export default function ExpenseEditForm() {
             businessId: user?.business?.id,
             invoiceId: payment.invoiceId,
             categoryId: payment.categoryId,
-            containerId: payment.containerId,
             partyId: payment.partyId,
             paymentType: payment.paymentType,
             paymentDate: payment.paymentDate,
@@ -169,47 +167,6 @@ export default function ExpenseEditForm() {
                         classNamePrefix="react-select"
                     />
                 </div>
-
-                {/* Invoice Type */}
-                { formData.paymentType !== "office_expense" && (
-                <div>
-                    <Label>Select Invoice Ref (if have)</Label>
-                    <Select
-                        options={invoices.map((i) => ({
-                            label: `#${i.id} | ${i.party?.name ?? "No name"}`,
-                            value: i.id,
-                            invoiceType: i.invoiceType,
-                            categoryId: i.categoryId,
-                            partyId: i.partyId
-                        }))}
-                        placeholder="Select invoice type"
-                        value={
-                            invoices
-                            .map((i) => ({
-                                label: `#${i.invoiceNo}`,
-                                value: i.id,
-                                invoiceType: i.invoiceType,
-                                categoryId: i.categoryId,
-                                partyId: i.partyId
-                            }))
-                            .find((option) => option.value === formData.invoiceId) || null
-                        }
-                        onChange={(selectedOption) => {
-                        setFormData((prev) => ({
-                            ...prev,
-                            invoiceId: Number(selectedOption!.value),
-                            invoiceType: selectedOption?.invoiceType,
-                            categoryId: Number(selectedOption?.categoryId),
-                            partyId: Number(selectedOption?.partyId)
-                        }));
-                        }}
-                        styles={selectStyles}
-                        classNamePrefix="react-select"
-                    />
-                </div>
-                )}
-
-                
 
                 {/* Date */}
                 <div>

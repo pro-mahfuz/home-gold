@@ -96,8 +96,6 @@ export default function InvoiceCreateForm() {
         note: "",
         items: [{
             itemId: 0,
-            containerId: null,
-            containerNo: null,
             uniqueId: Date.now(),
             name: "",
             price: 0,
@@ -182,8 +180,6 @@ export default function InvoiceCreateForm() {
     // Local state for current item inputs
     const [currentItem, setCurrentItem] = useState<Item>({
         itemId: 0,
-        containerId: null,
-        containerNo: null,
         uniqueId: Date.now(), // Generate unique ID for new item
         name: '',
         price: 0,
@@ -338,7 +334,6 @@ export default function InvoiceCreateForm() {
         // Reset item
         setCurrentItem({
             itemId: 0,
-            containerId: null,
             uniqueId: Date.now(),
             name: "",
             price: 0, // <— smart reset
@@ -646,9 +641,6 @@ export default function InvoiceCreateForm() {
                         <TableRow>
                             <TableCell isHeader className="text-center px-4 py-2">Sl</TableCell>
                             <TableCell isHeader className="text-center px-4 py-2">Item</TableCell>
-                            { !isStockCategory && (
-                                <TableCell isHeader className="text-center px-4 py-2">Container</TableCell>
-                            )}
                             <TableCell isHeader className="text-center px-4 py-2">Quantity</TableCell>
                             <TableCell isHeader className="text-center px-4 py-2">Unit</TableCell>
                             <TableCell isHeader className="text-center px-4 py-2">Price</TableCell>

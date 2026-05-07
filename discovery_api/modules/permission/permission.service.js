@@ -1,6 +1,27 @@
 import { Role, Permission } from "../../models/model.js";
 
-const EXCLUDED_PERMISSION_TERMS = ["bill", "container", "invoice", "customer", "supplier"];
+const ACTIVE_PERMISSION_GROUPS = [
+  "dashboard",
+  "role",
+  "permission",
+  "business",
+  "category",
+  "item",
+  "unit",
+  "account",
+  "warehouse",
+  "user",
+  "profile",
+  "party",
+  "purchase",
+  "sale",
+  "payment",
+  "expense",
+  "stock",
+  "ledger",
+  "report",
+  "status",
+];
 const EXCLUDED_PERMISSION_ACTIONS = [
   "report_daily_profit",
   "report_profit",
@@ -11,10 +32,12 @@ const EXCLUDED_PERMISSION_ACTIONS = [
 const EXCLUDED_PERMISSION_ACTION_FRAGMENTS = ["sale_2", "payment_2"];
 
 const shouldExcludePermission = (permission) => {
+  const group = String(permission?.group ?? "").toLowerCase();
   const action = String(permission?.action ?? "").toLowerCase();
-  const values = [permission?.group, permission?.name, permission?.action]
-    .filter(Boolean)
-    .map((value) => String(value).toLowerCase());
+
+  if (!ACTIVE_PERMISSION_GROUPS.includes(group)) {
+    return true;
+  }
 
   if (EXCLUDED_PERMISSION_ACTIONS.includes(action)) {
     return true;
@@ -24,9 +47,7 @@ const shouldExcludePermission = (permission) => {
     return true;
   }
 
-  return values.some((value) =>
-    EXCLUDED_PERMISSION_TERMS.some((term) => value.includes(term))
-  );
+  return false;
 };
 
 export const getAllPermissions = async () => {

@@ -1,4 +1,4 @@
-import { Payment, User, Party, Category, Container, Invoice, Bank, Ledger, sequelize } from "../../models/model.js";
+import { Payment, User, Party, Category, Invoice, Bank, Ledger, sequelize } from "../../models/model.js";
 import { Op, Sequelize } from "sequelize";
 
 const PAYMENT_CREDIT_TYPES = new Set([
@@ -51,10 +51,6 @@ export const getAllPayment = async () => {
         model: Invoice,
         as: "invoice",
         attributes: ["id", "prefix", "vatInvoiceNo", "isVat"], // 👈 ensure vatInvoiceNo is selected
-      },
-      {
-        model: Container,
-        as: "container",
       },
       {
         model: User,
@@ -135,7 +131,6 @@ export const getAllPaymentWithPagination = async (
       attributes: ["id", "prefix", "vatInvoiceNo", "isVat"],
       required: !!filterText,
     },
-    { model: Container, as: "container" },
     { model: User, as: "createdByUser" },
     { model: User, as: "updatedByUser" },
     { model: Bank, as: "bank" },
@@ -213,7 +208,6 @@ export const createPayment = async (req) => {
     const prefixMap = {
       payment_in: "PMI",
       payment_out: "PMO",
-      container_expense: "CEX",
       office_expense: "OEX",
       advance_received: "ADR",
       advance_payment: "ADP",
@@ -345,7 +339,6 @@ export const updatePayment = async (req) => {
     const prefixMap = {
       payment_in: "PMI",
       payment_out: "PMO",
-      container_expense: "CEX",
       office_expense: "OEX",
       advance_received: "ADR",
       advance_payment: "ADP",

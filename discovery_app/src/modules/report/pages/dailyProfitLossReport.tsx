@@ -20,7 +20,6 @@ import {
 import { getSaleReport, getDailyProfitLossReport } from "../../invoice/features/invoiceThunks.ts";
 import { selectAuth } from "../../auth/features/authSelectors";
 import { selectUserById } from "../../user/features/userSelectors";
-import { Link } from "react-router";
 
 import { selectAllCategory } from "../../category/features/categorySelectors.ts";
 import { fetchAllCategory } from "../../category/features/categoryThunks.ts";
@@ -135,9 +134,6 @@ export default function DailyProfitLossReport() {
                   <TableRow>
                     <TableCell isHeader className="border border-gray-500 text-center px-2 py-1">Sl</TableCell>
                     <TableCell isHeader className="border border-gray-500 text-center px-2 py-1">Date</TableCell>
-                    {!categories.find((c) => ["currency", "gold"].includes(c.name.toLowerCase()) ) && (
-                      <TableCell isHeader className="border border-gray-500 text-center px-2 py-1">Container No</TableCell>
-                    )}
                     <TableCell isHeader className="border border-gray-500 text-center px-2 py-1">Item Details</TableCell>
                     <TableCell isHeader className="border border-gray-500 text-center px-2 py-1">Purchase Qty (Avg.)</TableCell>
                     <TableCell isHeader className="border border-gray-500 text-center px-2 py-1">Purchase Amount (Avg.)</TableCell>
@@ -183,14 +179,6 @@ export default function DailyProfitLossReport() {
                           <TableCell className="border border-gray-500 text-center px-2 py-1 text-sm text-gray-500 dark:text-gray-400">
                               {item.date}
                           </TableCell>
-                          {!categories.find((c) => ["currency", "gold"].includes(c.name.toLowerCase()) ) && (
-                          <TableCell className="border border-gray-500 text-center px-2 py-1 text-sm text-gray-500 dark:text-gray-400">
-                              <Link to={`/report/sale/${item.containerNo!}`}>
-                                {item.containerNo}
-                              </Link>
-                          </TableCell>
-                          )}
-            
                           <TableCell className="border border-gray-500 text-center px-2 py-1 text-sm text-gray-500 dark:text-gray-400">
                               {item.itemName + " - " + item.itemUnit}
                           </TableCell>

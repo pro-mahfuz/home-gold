@@ -44,17 +44,6 @@ export const getSaleReport = async () => {
   }
 };
 
-export const getSaleContainerReport = async () => {
-  try {
-
-    const res = await axiosInstance.post('protected/invoice/getSaleContainerReport');
-    return res.data.data;
-
-  } catch {
-    throw new Error('No data available');
-  }
-};
-
 export const getSaleCashReport = async () => {
   try {
 

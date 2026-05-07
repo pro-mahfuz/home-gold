@@ -3,7 +3,6 @@ import { Category } from "../../category/features/categoryTypes";
 import { Party } from "../../party/features/partyTypes";
 import { Invoice } from "../../invoice/features/invoiceTypes";
 import { Account } from "../../account/features/accountTypes";
-import { Container } from "../../container/features/containerTypes";
 
 
 export type OptionType = {
@@ -36,8 +35,7 @@ export const paymentOptions:  OptionType[] = [
 ];
 
 export const expenseOptions:  OptionType[] = [
-  { value: "container_expense", label: "For Container" },
-  { value: "office_expense", label: "For Office" },
+  { value: "office_expense", label: "Expense" },
 ];
 
 export  const paymentMethodOptions:  OptionType[] = [
@@ -53,8 +51,6 @@ export interface Payment {
   invoiceId?: number | null;
   categoryId?: number | null;
   invoiceRefId?: string;
-  containerId?: number | null;
-  container?: Container;
   partyId?: number | null;
   paymentRefNo?: string;
   invoiceRefNo?: string;

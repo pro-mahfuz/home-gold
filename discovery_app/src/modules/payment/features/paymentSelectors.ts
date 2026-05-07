@@ -188,12 +188,8 @@ export const selectPurchaseCashPaymentReport = (fromDate?: string, toDate?: stri
 
 export const selectAllExpense = (state: RootState): Payment[] =>
   state.payment.data.filter(
-    p => p.paymentType === "container_expense" || p.paymentType === "office_expense"
+    p => p.paymentType === "office_expense"
   ) || [];
-
-export const selectAllContainerExpense = (containerId?: number) => (state: RootState): Payment[] =>
-  containerId ? state.payment.data.filter( p => p.paymentType === "container_expense" && p.containerId === containerId ) 
-  : state.payment.data.filter( p => p.paymentType === "container_expense" ) || [];
 
 export const selectAllOfficeExpense = (fromDate?: string, toDate?: string) =>
   createSelector(

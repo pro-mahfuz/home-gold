@@ -1,4 +1,4 @@
-import { Stock, Business, User, Invoice, InvoiceItem, Item, Bank, Category, Container, Ledger, Warehouse, Party, sequelize } from "../../models/model.js";
+import { Stock, Business, User, Invoice, InvoiceItem, Item, Bank, Category, Ledger, Warehouse, Party, sequelize } from "../../models/model.js";
 import { fn, literal, Op } from "sequelize";
 
 const STOCK_PREFIX_MAP = {
@@ -13,21 +13,11 @@ const STOCK_IN_MOVEMENT_TYPES = ["stock_in", "stock_transfer_return"];
 const STOCK_OUT_MOVEMENT_TYPES = ["stock_out", "stock_transfer"];
 const STOCK_TRANSFER_MOVEMENT_TYPES = ["stock_transfer", "stock_transfer_return"];
 
-const normalizeContainerId = (containerId) => {
-  if (containerId === null || containerId === undefined || containerId === "") {
-    return null;
-  }
-
-  const normalizedValue = Number(containerId);
-  return Number.isNaN(normalizedValue) ? null : normalizedValue;
-};
-
 const getWarehouseAvailableStock = async ({
   businessId,
   itemId,
   unit,
   warehouseId,
-  containerId,
   transaction,
 }) => {
   const where = {
@@ -35,7 +25,6 @@ const getWarehouseAvailableStock = async ({
     itemId,
     unit,
     warehouseId,
-    containerId: normalizeContainerId(containerId),
   };
 
   const [summary] = await Stock.findAll({
@@ -66,7 +55,6 @@ const getPartyTransferAvailableStock = async ({
   itemId,
   unit,
   partyId,
-  containerId,
   transaction,
 }) => {
   const where = {
@@ -74,7 +62,6 @@ const getPartyTransferAvailableStock = async ({
     itemId,
     unit,
     partyId,
-    containerId: normalizeContainerId(containerId),
   };
 
   const [summary] = await Stock.findAll({
@@ -116,10 +103,6 @@ export const getAllStock = async () => {
             {
                 model: Bank,
                 as: "bank",
-            },
-            {
-                model: Container,
-                as: "container",
             },
             {
                 model: Warehouse,
@@ -187,7 +170,6 @@ export const getStockReport = async () => {
             required: false,
             include: [
               { model: Item, as: "item", required: false },
-              { model: Container, as: "container", required: false },
               { model: Warehouse, as: "warehouse", required: false },
             ],
           },
@@ -213,20 +195,17 @@ export const getStockReport = async () => {
     invoiceItems.forEach((invoiceItem) => {
       const partyId = Number(ledger.partyId) || 0;
       const warehouseId = Number(invoiceItem.warehouseId) || 0;
-      const containerId = Number(invoiceItem.containerId) || 0;
       const itemId = Number(invoiceItem.itemId) || 0;
       const unit = invoiceItem.unit ?? "";
-      const key = [partyId, warehouseId, containerId, itemId, unit].join("|");
+      const key = [partyId, warehouseId, itemId, unit].join("|");
 
       const existing = grouped.get(key) ?? {
         partyId: partyId || null,
         party: ledger.party ?? null,
         warehouseId: warehouseId || null,
-        containerId: containerId || null,
         itemId: itemId || null,
         unit,
         warehouse: invoiceItem.warehouse ?? null,
-        container: invoiceItem.container ?? null,
         item: invoiceItem.item ?? null,
         totalUnfixPurchase: 0,
         totalFixPurchase: 0,
@@ -348,7 +327,6 @@ export const createStockTransfer = async (req) => {
       categoryId,
       invoiceId = null,
       itemId,
-      containerId = null,
       unit,
       quantity,
       warehouseId = null,
@@ -366,7 +344,6 @@ export const createStockTransfer = async (req) => {
     const normalizedPartyId = Number(partyId) > 0 ? Number(partyId) : null;
     const normalizedInvoiceId = Number(invoiceId) > 0 ? Number(invoiceId) : null;
     const normalizedBusinessId = Number(businessId) || 0;
-    const normalizedContainerId = normalizeContainerId(containerId);
 
     if (normalizedQty <= 0) {
       throw { status: 400, message: "Transfer quantity must be greater than zero." };
@@ -429,7 +406,6 @@ export const createStockTransfer = async (req) => {
         itemId: normalizedItemId,
         unit,
         partyId: normalizedPartyId,
-        containerId: normalizedContainerId,
         transaction: t,
       });
 
@@ -445,7 +421,6 @@ export const createStockTransfer = async (req) => {
         itemId: normalizedItemId,
         unit,
         warehouseId: normalizedWarehouseId,
-        containerId: normalizedContainerId,
         transaction: t,
       });
 
@@ -465,7 +440,6 @@ export const createStockTransfer = async (req) => {
       partyId: normalizedPartyId,
       categoryId: normalizedCategoryId,
       itemId: normalizedItemId,
-      containerId: normalizedContainerId,
       bankId: null,
       quantity: normalizedQty,
       unit,
@@ -516,7 +490,6 @@ export const createStockTransfer = async (req) => {
       movementType: normalizedMovementType,
       itemId: normalizedItemId,
       itemName: item.name,
-      containerId: normalizedContainerId,
       warehouseId: normalizedWarehouseId,
       warehouseName: warehouse.name,
       invoiceId: normalizedInvoiceId,
@@ -596,7 +569,6 @@ export const getStockById = async (id) => {
     const data = await Stock.findByPk(id, {
       include: [
         { model: Item, as: "item" },
-        { model: Container, as: "container" },
         { model: Warehouse, as: "warehouse" },
         { model: Party, as: "party" },
       ],
@@ -630,9 +602,6 @@ export const updateStock = async (req) => {
     }
     if (!req.body.bankId) {
       req.body.bankId = null;
-    }
-    if (!req.body.containerId) {
-      req.body.containerId = null;
     }
 
     // Update stock with request body data

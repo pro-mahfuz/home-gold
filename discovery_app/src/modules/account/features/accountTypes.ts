@@ -31,7 +31,6 @@ export interface BalanceReport {
   advanceInSum?: number;
   advanceOutSum?: number;
   expenseOutSum?: number;
-  containerExpenseOutSum?: number;
   billOutSum?: number;
 }
 
@@ -43,7 +42,6 @@ export interface AssetReport {
   capitalInSum?: number;
   capitalOutSum?: number;
   expenseOutSum?: number;
-  containerExpenseOutSum?: number;
 }
 
 export interface AccountState {

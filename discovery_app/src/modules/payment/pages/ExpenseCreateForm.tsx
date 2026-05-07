@@ -18,13 +18,11 @@ import { Payment } from "../features/paymentTypes.ts";
 
 import { create } from "../features/paymentThunks";
 import { fetchParty } from "../../party/features/partyThunks.ts";
-import { fetchAllInvoice } from "../../invoice/features/invoiceThunks.ts";
 import { fetchAllAccount } from "../../account/features/accountThunks.ts";
 import { fetchAllStatus } from "../../status/features/statusThunks.ts";
 
 import { selectAuth } from "../../auth/features/authSelectors";
 import { selectUserById } from "../../user/features/userSelectors";
-import { selectAllInvoice } from "../../invoice/features/invoiceSelectors.ts";
 import { selectAllAccount } from "../../account/features/accountSelectors.ts";
 import { selectAllStatusByType } from "../../status/features/statusSelectors.ts";
 
@@ -41,12 +39,10 @@ export default function ExpenseCreateForm() {
 
     useEffect(() => {
         dispatch(fetchParty({ type: "all" }))
-        dispatch(fetchAllInvoice());
         dispatch(fetchAllAccount());
         dispatch(fetchAllStatus());
     }, [dispatch]);
 
-    const invoices = useSelector(selectAllInvoice);
     const paymentAccounts = useSelector(selectAllAccount);
     const InvoiceTypeOptions = useSelector(selectAllStatusByType(Number(user?.business?.id), 'expense'));
 
@@ -54,7 +50,6 @@ export default function ExpenseCreateForm() {
         businessId: 0,
         invoiceId: null,
         categoryId: null,
-        containerId: null,
         partyId: null,
         paymentType: '',
         paymentDate: "",
@@ -152,41 +147,6 @@ export default function ExpenseCreateForm() {
                         required
                     />
                 </div>
-
-                {/* Invoice Type */}
-                { formData.paymentType === "container_expense" && (
-                    <div>
-                        <Label>Select Invoice Ref</Label>
-                        <Select
-                            options={
-                                invoices.map((i) => ({
-                                    label: `#${i.invoiceNo}`,
-                                    value: i.id,
-                                    invoiceType: i.invoiceType,
-                                    categoryId: i.categoryId,
-                                    partyId: i.partyId
-                                })) || []
-                            }
-                            placeholder="Select invoice type"
-
-                            onChange={(selectedOption) => {
-                                setFormData(prev => ({
-                                    ...prev,
-                                    invoiceId: Number(selectedOption!.value),
-                                    invoiceType: selectedOption?.invoiceType,
-                                    categoryId: Number(selectedOption?.categoryId),
-                                    partyId: Number(selectedOption?.partyId)
-                                    
-                                }));
-                            }}
-                            styles={selectStyles}
-                            classNamePrefix="react-select"
-                            isClearable
-                            required
-                        />
-                    </div>
-                ) }
-
 
                 {/* Date */}
                 <div>

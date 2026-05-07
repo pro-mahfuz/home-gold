@@ -249,10 +249,6 @@ export default function InvoiceList() {
                   <TableCell isHeader className="border border-gray-500 text-center px-1 py-1">Category</TableCell>
                   <TableCell isHeader className="border border-gray-500 text-center px-1 py-1">Type</TableCell>
                   <TableCell isHeader className="border border-gray-500 text-center px-1 py-1">Party Name</TableCell>
-                  {!categories.find((c) => ["currency", "gold"].includes(c.name.toLowerCase()) ) && (
-                    <TableCell isHeader className="border border-gray-500 text-center px-1 py-1">Container</TableCell>
-                  )}
-                  
                   <TableCell isHeader className="border border-gray-500 text-center px-1 py-1">Items</TableCell>
                   <TableCell isHeader className="border border-gray-500 text-center px-1 py-1">Qty</TableCell>
                   <TableCell isHeader className="border border-gray-500 text-center px-1 py-1">Stock (Paid)</TableCell>
@@ -296,13 +292,6 @@ export default function InvoiceList() {
                       <TableCell className="border border-gray-500 text-center px-1 py-1 text-sm text-gray-500 dark:text-gray-400">{invoice.category?.name}</TableCell>
                       <TableCell className="border border-gray-500 text-center px-1 py-1 text-sm text-gray-500 dark:text-gray-400">{invoice.invoiceType}</TableCell>
                       <TableCell className="border border-gray-500 text-center px-1 py-1 text-sm text-gray-500 dark:text-gray-400">{invoice.party?.name}</TableCell>
-                      {!categories.find((c) => ["currency", "gold"].includes(c.name.toLowerCase()) ) && (
-                        <TableCell className="border border-gray-500 text-center px-1 py-1 text-sm text-gray-500 dark:text-gray-400">
-                          {invoice.items.map((item, idx) => (
-                            <div key={idx}>{item.container?.containerNo}</div>
-                          ))}
-                        </TableCell>
-                      )}
                       <TableCell className="border border-gray-500 text-center px-1 py-1 text-sm text-gray-500 dark:text-gray-400">
                         {invoice.items.map((item, idx) => (
                           <div key={idx}>{item.name}</div>

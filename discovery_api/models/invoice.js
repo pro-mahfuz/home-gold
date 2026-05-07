@@ -18,10 +18,6 @@ export default (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: true,
     },
-    containerId: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-    },
     prefix: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -121,7 +117,6 @@ export default (sequelize, DataTypes) => {
     Invoice.hasMany(models.InvoiceItem, { foreignKey: "invoiceId", as: "items", onDelete: "CASCADE" });
     Invoice.hasMany(models.Payment, { foreignKey: "invoiceId", as: "payments" });
     Invoice.hasMany(models.Stock, { foreignKey: "invoiceId", as: "stocks" });
-    Invoice.belongsTo(models.Container, { foreignKey: "containerId", as: "container" });
 
     Invoice.belongsTo(models.User, { foreignKey: "createdBy", as: "createdByUser" });
     Invoice.belongsTo(models.User, { foreignKey: "updatedBy", as: "updatedByUser" });

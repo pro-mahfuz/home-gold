@@ -33,8 +33,6 @@ import {
   selectAllExpense,
 } from "../features/paymentSelectors.ts";
 import { fetchAll, destroy } from "../features/paymentThunks.ts";
-import { selectAllCategory } from "../../category/features/categorySelectors.ts";
-import { fetchAllCategory } from "../../category/features/categoryThunks.ts";
 
 export default function ExpenseList() {
   
@@ -54,12 +52,10 @@ export default function ExpenseList() {
     if(payments.length === 0){
       dispatch(fetchAll());
     }
-    dispatch(fetchAllCategory());
   }, [dispatch]);
 
   const payments = useSelector(selectAllExpense);
   const status = useSelector(selectPaymentStatus);
-  const categories = useSelector(selectAllCategory);
 
   const filteredData = useMemo(() => {
     if (!filterText) return payments;
@@ -69,7 +65,6 @@ export default function ExpenseList() {
         p.paymentRefNo?.toLowerCase().includes(text) ||
         p.paymentDate?.toLowerCase().includes(text) ||
         p.paymentType?.toLowerCase().includes(text) ||
-        p.container?.containerNo?.toLowerCase().includes(text) ||
         p.note?.toLowerCase().includes(text)
     );
   }, [payments, filterText]);
@@ -150,7 +145,7 @@ export default function ExpenseList() {
       <div className="space-y-6">
         <div className="rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
           
-          <SearchControl value={filterText} onChange={setFilterText} placeHolder="Expense Type / Container No / Details" />
+          <SearchControl value={filterText} onChange={setFilterText} placeHolder="Expense Type / Details" />
 
           <div className="px-4">
             <Table>
@@ -160,10 +155,6 @@ export default function ExpenseList() {
                   <TableCell isHeader className="border border-gray-500 text-center px-4 py-1">Date</TableCell>
                   <TableCell isHeader className="border border-gray-500 text-center px-4 py-1">Reference No</TableCell>
                   <TableCell isHeader className="border border-gray-500 text-center px-4 py-1">Expense Type</TableCell>
-
-                  {!categories.find((c) => ["currency", "gold"].includes(c.name.toLowerCase())) && (
-                  <TableCell isHeader className="border border-gray-500 text-center px-4 py-1">Container No</TableCell>
-                  )}
 
                   <TableCell isHeader className="border border-gray-500 text-center px-4 py-1">Expense Details</TableCell>
                   <TableCell isHeader className="border border-gray-500 text-center px-4 py-1">Payment Currency</TableCell>
@@ -205,12 +196,6 @@ export default function ExpenseList() {
                         {payment.paymentType}
                       </TableCell>
 
-                      {!categories.find((c) => ["currency", "gold"].includes(c.name.toLowerCase())) && (
-                      <TableCell className="border border-gray-500 text-center px-4 py-1 text-sm text-gray-500 dark:text-gray-400">
-                        {payment.container?.containerNo ?? "---"}
-                      </TableCell>
-                      )}
-                      
                       <TableCell className="border border-gray-500 text-center px-4 py-1 text-sm text-gray-500 dark:text-gray-400">
                         {payment.note}
                       </TableCell>

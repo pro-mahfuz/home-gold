@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -30,7 +30,6 @@ import { selectStyles } from "../../types.ts";
 import Select from "react-select";
 
 export default function SaleStatement() {
-  const { containerNo } = useParams()
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
@@ -45,7 +44,7 @@ export default function SaleStatement() {
     dispatch(fetchParty({ type: "customer" }))
     dispatch(getSaleReport());
     dispatch(fetchAllCategory());
-  }, [dispatch, containerNo]);
+  }, [dispatch]);
 
   const authUser = useSelector(selectAuth);
   const user = useSelector(selectUserById(Number(authUser.user?.id)));

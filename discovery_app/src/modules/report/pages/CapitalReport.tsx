@@ -67,7 +67,7 @@ export default function CapitalReport() {
 
 
 
-    return balanceReports.reduce((acc, { currency, openingBalance, capitalInSum, capitalOutSum, expenseOutSum, containerExpenseOutSum }) => {
+    return balanceReports.reduce((acc, { currency, openingBalance, capitalInSum, capitalOutSum, expenseOutSum }) => {
       if (!currency) return acc;
 
       if (!acc[currency]) {
@@ -77,7 +77,6 @@ export default function CapitalReport() {
           capitalOut: 0,
           profitLoss: 0,
           expenseOut: 0,
-          containerExpenseOut: 0,
         };
       }
 
@@ -85,7 +84,6 @@ export default function CapitalReport() {
       acc[currency].capitalIn += Number(capitalInSum ?? 0);
       acc[currency].capitalOut += Number(capitalOutSum ?? 0);
       acc[currency].expenseOut += Number(expenseOutSum ?? 0);
-      acc[currency].containerExpenseOut += Number(containerExpenseOutSum ?? 0);
 
       // attach grouped profit/loss once
       acc[currency].profitLoss = profitLossByCurrency[currency] ?? 0;
@@ -97,7 +95,6 @@ export default function CapitalReport() {
       capitalOut: number;
       profitLoss: number;
       expenseOut: number;
-      containerExpenseOut: number;
     }>);
   }, [balanceReports, profitLossReports]);
 
@@ -201,10 +198,10 @@ export default function CapitalReport() {
                             {totals.profitLoss.toFixed(2)}
                           </TableCell>
                           <TableCell className="border border-gray-500 text-center px-2 py-1 text-sm text-gray-500 dark:text-gray-400">
-                            {(totals.expenseOut + totals.containerExpenseOut).toFixed(2)}
+                            {totals.expenseOut.toFixed(2)}
                           </TableCell>
                           <TableCell className="border border-gray-500 text-center px-2 py-1 text-sm text-gray-500 dark:text-gray-400">
-                            {(totals.openingAmount + totals.capitalIn + (totals.profitLoss) - totals.capitalOut - totals.expenseOut - totals.containerExpenseOut).toFixed(2)}
+                            {(totals.openingAmount + totals.capitalIn + (totals.profitLoss) - totals.capitalOut - totals.expenseOut).toFixed(2)}
                           </TableCell>
                         </TableRow>
                       ))} 

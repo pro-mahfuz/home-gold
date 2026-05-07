@@ -18,10 +18,6 @@ export default (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: true,
     },
-    containerId: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-    },
     prefix: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -96,7 +92,6 @@ export default (sequelize, DataTypes) => {
     Payment.belongsTo(models.Invoice, { foreignKey: "invoiceId", as: "invoice" });
     Payment.belongsTo(models.Business, { foreignKey: "businessId", as: "business" });
     Payment.belongsTo(models.Bank, { foreignKey: "bankId", as: "bank" });
-    Payment.belongsTo(models.Container, { foreignKey: "containerId", as: "container" });
 
     Payment.belongsTo(models.User, { foreignKey: "createdBy", as: "createdByUser" });
     Payment.belongsTo(models.User, { foreignKey: "updatedBy", as: "updatedByUser" });

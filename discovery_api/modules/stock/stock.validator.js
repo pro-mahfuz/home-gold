@@ -91,11 +91,6 @@ export const stockTransferSchema = yup.object({
     .typeError("warehouseId must be a number")
     .integer("warehouseId must be an integer"),
 
-  containerId: yup
-    .number()
-    .nullable()
-    .typeError("containerId must be a number"),
-
   partyId: yup
     .number()
     .nullable()

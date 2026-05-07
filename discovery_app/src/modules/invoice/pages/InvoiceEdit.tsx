@@ -34,9 +34,7 @@ import {
 } from "../../category/features/categorySelectors";
 import { selectUserById } from "../../user/features/userSelectors";
 import { selectAuth } from "../../auth/features/authSelectors";
-import { selectAllContainer } from "../../container/features/containerSelectors";
 import { selectInvoiceById } from "../features/invoiceSelectors";
-import { fetchAll } from "../../container/features/containerThunks.ts";
 import { selectAllInvoice, selectInvoiceStatus } from "../../invoice/features/invoiceSelectors.ts";
 
 import { selectStyles, CurrencyOptions } from "../../types.ts";
@@ -98,8 +96,6 @@ export default function InvoiceEdit() {
 
     const [currentItem, setCurrentItem] = useState<Item>({
         itemId: 0,
-        containerId: null,
-        containerNo: null,
         name: "",
         price: 0,
         vatPercentage: 0,
@@ -116,7 +112,6 @@ export default function InvoiceEdit() {
         if ( matchingParties.length === 0) dispatch(fetchParty({ type: "all" }));
         dispatch(fetchAllCategory());
         dispatch(fetchAllItem());
-        dispatch(fetchAll());
         dispatch(fetchAllStatus());
         dispatch(fetchAllUnit());
         dispatch(fetchAllWarehouse());
@@ -160,7 +155,6 @@ export default function InvoiceEdit() {
     }, [user, invoice]);
 
     const categoryItem = useSelector(selectCategoryById(Number(formData.categoryId)));
-    const containers = useSelector(selectAllContainer);
     const warehouses = useSelector(selectAllWarehouse);
     const paymentAccounts = useSelector(selectAllAccount);
 
@@ -227,8 +221,6 @@ export default function InvoiceEdit() {
 
         setCurrentItem({
             itemId: 0,
-            containerId: null,
-            containerNo: null,
             uniqueId: Date.now(),
             name: '',
             price: 0,
@@ -248,7 +240,6 @@ export default function InvoiceEdit() {
         const newItems = formData.items.filter(i => !(
             (item.uniqueId && i.uniqueId === item.uniqueId) ||
             (
-                i.containerId === item.containerId &&
                 i.quantity === item.quantity &&
                 i.unit === item.unit &&
                 i.warehouseId === item.warehouseId
@@ -578,38 +569,6 @@ export default function InvoiceEdit() {
                         />
                     </div>
 
-                    {!categories.find((c) => ["currency", "gold"].includes(c.name.toLowerCase()) ) && (
-                        <div>
-                            <Label>Container</Label>
-                            <Select
-                                options={
-                                containers?.map((i) => ({
-                                    label: i.containerNo,
-                                    value: i.id
-                                })) || []
-                                }
-                                placeholder="Select container"
-                                value={
-                                containers
-                                    ?.map((w) => ({ label: w.containerNo, value: w.id }))
-                                    .find((option) => option.value === currentItem.containerId) || null
-                                }
-                                onChange={(selectedOption) =>
-                                setCurrentItem((prev) => ({
-                                    ...prev,
-                                    containerId: selectedOption ? Number(selectedOption.value) : null,
-                                    containerNo: selectedOption?.label ?? null, 
-                                }))
-                                }
-                                isClearable
-                                styles={selectStyles}
-                                classNamePrefix="react-select"
-                            />
-                        </div>
-
-
-                    )}
-
                     <div>
                         <Label>Quantity</Label>
                         <Input
@@ -707,9 +666,6 @@ export default function InvoiceEdit() {
                     <TableRow>
                     <TableCell isHeader className="text-center px-4 py-2">Sl</TableCell>
                     <TableCell isHeader className="text-center px-4 py-2">Item</TableCell>
-                    { !categories.find((c) => ["currency", "gold"].includes(c.name.toLowerCase()) ) && formData.invoiceType === "sale" && (
-                        <TableCell isHeader className="text-center px-4 py-2">Container</TableCell>
-                    )}
                     <TableCell isHeader className="text-center px-4 py-2">Quantity</TableCell>
                     <TableCell isHeader className="text-center px-4 py-2">Unit</TableCell>
                     <TableCell isHeader className="text-center px-4 py-2">Price</TableCell>
@@ -733,9 +689,6 @@ export default function InvoiceEdit() {
                         <TableRow key={`${item.itemId}-${index}`}>
                         <TableCell className="text-center px-4 py-2">{index + 1}</TableCell>
                         <TableCell className="text-center px-4 py-2">{item.name}</TableCell>
-                        { !categories.find((c) => ["currency", "gold"].includes(c.name.toLowerCase()) ) && formData.invoiceType === "sale" && (
-                            <TableCell className="text-center px-4 py-2">{item?.containerNo ?? item?.container?.containerNo}</TableCell>
-                        )}
                         <TableCell className="text-center px-4 py-2">{item.quantity}</TableCell>
                         <TableCell className="text-center px-4 py-2">{item.unit?.toUpperCase()}</TableCell>
                         <TableCell className="text-center px-4 py-2">{item?.price?.toFixed(2)}</TableCell>
